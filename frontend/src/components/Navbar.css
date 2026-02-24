@@ -1,0 +1,116 @@
+@import "../styles/variables.css";
+
+.navbar-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background-color: var(--bg-secondary);
+  box-shadow: var(--shadow-md);
+  border-bottom: 1px solid var(--border-color);
+  height: 60px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.navbar-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2rem;
+}
+
+.navbar {
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.navbar ul {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 2rem;
+  gap: 2rem;
+  height: 100%;
+  align-items: center;
+}
+
+.navbar a {
+  text-decoration: none;
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 1rem;
+  transition: var(--transition);
+  padding: 0.5rem 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.navbar a:hover {
+  color: var(--primary);
+}
+
+.navbar a::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: var(--primary);
+  transition: var(--transition);
+}
+
+.navbar a:hover::after {
+  width: 100%;
+}
+
+.btn-logout-container {
+  padding: 0 2rem 0 0;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.btn-logout {
+  padding: 0.5rem 1.25rem;
+  background-color: var(--danger);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: var(--transition);
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  margin: 0;
+  line-height: 1.2;
+  position: relative;
+  top: 1px;
+}
+
+.btn-logout:hover {
+  background-color: var(--danger-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-logout:active {
+  transform: translateY(0);
+  box-shadow: none;
+}

@@ -1,0 +1,49 @@
+@import "./variables.css";
+
+.home-container {
+  min-height: 100vh;
+  padding: 6rem 2rem 2rem; /* Extra top padding for fixed navbar */
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start; /* Changed from center to flex-start */
+  text-align: center;
+  transition: var(--transition);
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.home-container h1 {
+  font-size: 2.5rem;
+  margin: 0 0 1.5rem 0;
+  color: var(--text-primary);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.home-container p {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  margin: 0 0 2.5rem 0;
+  max-width: 600px;
+  line-height: 1.6;
+}
+/* Add some subtle animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.home-container > * {
+  animation: fadeIn 0.5s ease-out forwards;
+}

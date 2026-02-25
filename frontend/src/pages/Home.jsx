@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
 export default function HomePage() {
   const [dealType, setDealType] = useState("rent"); // rent | buy
@@ -7,6 +8,10 @@ export default function HomePage() {
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
   const [query, setQuery] = useState("");
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+
+  // ПРИМЕР: подставь свою логику (token, user, cookie и т.д.)
+  const isAuthed = Boolean(localStorage.getItem("access_token") || localStorage.getItem("token"));
 
   const listings = useMemo(
     () => [
@@ -75,8 +80,7 @@ export default function HomePage() {
   }, [listings, dealType, propertyType, district, priceMin, priceMax, query]);
 
   const formatPrice = (n) =>
-    new Intl.NumberFormat("ru-RU").format(n) +
-    (dealType === "rent" ? " ₽/мес" : " ₽");
+    new Intl.NumberFormat("ru-RU").format(n) + (dealType === "rent" ? " ₽/мес" : " ₽");
 
   const statusMeta = (status) => {
     switch (status) {
@@ -98,7 +102,7 @@ export default function HomePage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="h-3 w-3 rounded-full bg-gray-900" />
-            <span className="font-extrabold tracking-tight text-[100px]">Недвижимость</span>
+            <span className="font-extrabold tracking-tight">Недвижимость</span>
           </div>
 
           <nav className="flex items-center gap-2">
@@ -108,48 +112,89 @@ export default function HomePage() {
             >
               Каталог
             </a>
-            <a
-              href="#auth"
-              className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100"
-            >
-              Вход
-            </a>
-            <a
-              href="#register"
-              className="rounded-xl bg-gray-900 px-3 py-2 text-sm font-extrabold text-white hover:bg-gray-800"
-            >
-              Регистрация
-            </a>
+
+            {!isAuthed ? (
+              <>
+                <Link
+                  to="/login"
+                  className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100"
+                >
+                  Вход
+                </Link>
+                <Link
+                  to="/register"
+                  className="rounded-xl bg-gray-900 px-3 py-2 text-sm font-extrabold text-white hover:bg-gray-800"
+                >
+                  Регистрация
+                </Link>
+              </>
+            ) : (
+              <Link
+                to="/logout"
+                className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100"
+              >
+                Выйти
+              </Link>
+            )}
           </nav>
         </div>
       </header>
 
-      {/* Hero + Search */}
+      {/* Hero */}
       <section className="border-b border-gray-200 bg-gradient-to-b from-gray-900/5 to-transparent">
         <div className="mx-auto max-w-6xl px-4 py-10">
-          <h1 className="text-3xl font-extrabold leading-tight md:text-4xl">
-            Найдите жильё для аренды или покупки
-          </h1>
-          <p className="mt-3 max-w-2xl text-gray-600">
-            Фильтруйте объекты по району, цене и типу недвижимости — всё в одном месте.
-          </p>
+          <div className="grid gap-6 lg:grid-cols-[1fr,360px] lg:items-start">
+            <div>
+              <h1 className="text-3xl font-extrabold leading-tight md:text-4xl">
+                Найдите жильё для аренды или покупки
+              </h1>
+              <p className="mt-3 max-w-2xl text-gray-600">
+                Фильтруйте объекты по району, цене и типу недвижимости — всё в одном месте.
+              </p>
 
-          <div className="mt-5 flex flex-wrap gap-2">
-            <input
-              className="w-full flex-1 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-gray-400 md:min-w-[520px]"
-              placeholder="Поиск по объектам (адрес, тип, характеристики)…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <button
-              className="rounded-2xl bg-gray-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-gray-800"
-              onClick={() =>
-                document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth" })
-              }
-              type="button"
-            >
-              Искать
-            </button>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <input
+                  className="w-full flex-1 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-gray-400 md:min-w-[520px]"
+                  placeholder="Поиск по объектам (адрес, тип, характеристики)…"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+                <button
+                  className="rounded-2xl bg-gray-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-gray-800"
+                  onClick={() => document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth" })}
+                  type="button"
+                >
+                  Искать
+                </button>
+              </div>
+            </div>
+
+            {/* CTA card вместо видимых форм */}
+            {!isAuthed && (
+              <div className="rounded-2xl border border-gray-200 bg-white p-4">
+                <div className="text-sm font-extrabold">Чтобы связаться с собственником</div>
+                <p className="mt-1 text-sm text-gray-600">
+                  Войдите или зарегистрируйтесь — это займёт минуту.
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <Link
+                    to="/login"
+                    className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-center text-sm font-extrabold hover:bg-gray-50"
+                  >
+                    Войти
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="flex-1 rounded-xl bg-gray-900 px-3 py-2 text-center text-sm font-extrabold text-white hover:bg-gray-800"
+                  >
+                    Регистрация
+                  </Link>
+                </div>
+                <div className="mt-3 text-xs text-gray-500">
+                  Демо-данные. Реальные контакты скрыты без авторизации.
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -169,20 +214,15 @@ export default function HomePage() {
             <aside className="top-[76px] h-fit rounded-2xl border border-gray-200 bg-white p-4 lg:sticky">
               <h3 className="mb-3 text-base font-extrabold">Фильтры</h3>
 
-              {/* Deal type */}
               <div className="mb-3">
-                <label className="mb-1.5 block text-xs font-semibold text-gray-600">
-                  Тип сделки
-                </label>
+                <label className="mb-1.5 block text-xs font-semibold text-gray-600">Тип сделки</label>
                 <div className="flex gap-2 rounded-2xl bg-gray-100 p-1.5">
                   <button
                     type="button"
                     onClick={() => setDealType("rent")}
                     className={[
                       "flex-1 rounded-xl px-3 py-2 text-sm font-bold",
-                      dealType === "rent"
-                        ? "border border-gray-200 bg-white"
-                        : "text-gray-700 hover:bg-white/60",
+                      dealType === "rent" ? "border border-gray-200 bg-white" : "text-gray-700 hover:bg-white/60",
                     ].join(" ")}
                   >
                     Аренда
@@ -192,9 +232,7 @@ export default function HomePage() {
                     onClick={() => setDealType("buy")}
                     className={[
                       "flex-1 rounded-xl px-3 py-2 text-sm font-bold",
-                      dealType === "buy"
-                        ? "border border-gray-200 bg-white"
-                        : "text-gray-700 hover:bg-white/60",
+                      dealType === "buy" ? "border border-gray-200 bg-white" : "text-gray-700 hover:bg-white/60",
                     ].join(" ")}
                   >
                     Покупка
@@ -202,7 +240,6 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Property type */}
               <div className="mb-3">
                 <label className="mb-1.5 block text-xs font-semibold text-gray-600">
                   Тип недвижимости
@@ -219,7 +256,6 @@ export default function HomePage() {
                 </select>
               </div>
 
-              {/* Price range */}
               <div className="mb-3">
                 <label className="mb-1.5 block text-xs font-semibold text-gray-600">
                   Диапазон цены
@@ -245,11 +281,8 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* District */}
               <div className="mb-4">
-                <label className="mb-1.5 block text-xs font-semibold text-gray-600">
-                  Район
-                </label>
+                <label className="mb-1.5 block text-xs font-semibold text-gray-600">Район</label>
                 <select
                   className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-gray-400"
                   value={district}
@@ -285,17 +318,14 @@ export default function HomePage() {
               <div className="grid gap-4 md:grid-cols-2">
                 {filtered.map((item) => {
                   const s = statusMeta(item.status);
+
                   return (
                     <article
                       key={item.id}
                       className="overflow-hidden rounded-2xl border border-gray-200 bg-white"
                     >
                       <div className="relative h-44 bg-gray-100">
-                        <img
-                          src={item.image}
-                          alt={item.title}
-                          className="h-full w-full object-cover"
-                        />
+                        <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
                         <span
                           className={[
                             "absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-extrabold",
@@ -308,9 +338,7 @@ export default function HomePage() {
 
                       <div className="p-4">
                         <div className="flex items-start justify-between gap-3">
-                          <h4 className="text-base font-extrabold leading-snug">
-                            {item.title}
-                          </h4>
+                          <h4 className="text-base font-extrabold leading-snug">{item.title}</h4>
                           <div className="whitespace-nowrap text-sm font-extrabold">
                             {formatPrice(item.price)}
                           </div>
@@ -327,11 +355,13 @@ export default function HomePage() {
                         <button
                           className="mt-4 w-full rounded-xl border border-gray-900 bg-white px-3 py-2 text-sm font-extrabold text-gray-900 hover:bg-gray-50"
                           type="button"
-                          onClick={() =>
-                            alert("Нужно войти, чтобы связаться с собственником.")
-                          }
+                          onClick={() => {
+                            if (!isAuthed) return setAuthModalOpen(true);
+                            // тут будет действие "связаться"
+                            alert("Открыть чат/контакты (пока демо).");
+                          }}
                         >
-                          Войти для связи
+                          Связаться
                         </button>
                       </div>
                     </article>
@@ -350,112 +380,6 @@ export default function HomePage() {
         </div>
       </main>
 
-      {/* Registration */}
-      <section id="register" className="py-10">
-        <div className="mx-auto max-w-6xl px-4">
-          <h2 className="text-xl font-extrabold">Регистрация</h2>
-
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <div className="rounded-2xl border border-gray-200 bg-white p-4">
-              <h3 className="text-base font-extrabold">Выбор роли</h3>
-              <div className="mt-3 flex gap-2 rounded-2xl bg-gray-100 p-1.5">
-                <button
-                  className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-extrabold"
-                  type="button"
-                >
-                  Клиент
-                </button>
-                <button
-                  className="flex-1 rounded-xl px-3 py-2 text-sm font-extrabold text-gray-700 hover:bg-white/60"
-                  type="button"
-                >
-                  Собственник
-                </button>
-              </div>
-              <p className="mt-2 text-xs text-gray-500">
-                В демо роль не сохраняется — это UI по карте сайта.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-gray-200 bg-white p-4">
-              <h3 className="text-base font-extrabold">Форма регистрации</h3>
-              <form
-                className="mt-3 space-y-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  alert("Регистрация (демо).");
-                }}
-              >
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <input
-                    className="rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-400"
-                    placeholder="Имя"
-                  />
-                  <input
-                    className="rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-400"
-                    placeholder="Телефон"
-                  />
-                </div>
-                <input
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-400"
-                  placeholder="Email"
-                  type="email"
-                />
-                <input
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-400"
-                  placeholder="Пароль"
-                  type="password"
-                />
-                <button
-                  className="w-full rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-extrabold text-white hover:bg-gray-800"
-                  type="submit"
-                >
-                  Зарегистрироваться
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Auth */}
-      <section id="auth" className="border-t border-gray-200 bg-gray-50 py-10">
-        <div className="mx-auto max-w-6xl px-4">
-          <h2 className="text-xl font-extrabold">Вход (Авторизация)</h2>
-
-          <div className="mt-4 max-w-xl rounded-2xl border border-gray-200 bg-white p-4">
-            <h3 className="text-base font-extrabold">Войти в аккаунт</h3>
-            <form
-              className="mt-3 space-y-2"
-              onSubmit={(e) => {
-                e.preventDefault();
-                alert("Вход (демо).");
-              }}
-            >
-              <input
-                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-400"
-                placeholder="Email"
-                type="email"
-              />
-              <input
-                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-400"
-                placeholder="Пароль"
-                type="password"
-              />
-              <button
-                className="w-full rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-extrabold text-white hover:bg-gray-800"
-                type="submit"
-              >
-                Войти
-              </button>
-            </form>
-            <p className="mt-2 text-xs text-gray-500">
-              После входа можно будет нажимать «Войти для связи» на карточках.
-            </p>
-          </div>
-        </div>
-      </section>
-
       {/* Footer */}
       <footer className="border-t border-gray-200 py-6">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 text-sm text-gray-600">
@@ -464,15 +388,56 @@ export default function HomePage() {
             <a href="#catalog" className="hover:text-gray-900">
               Каталог
             </a>
-            <a href="#register" className="hover:text-gray-900">
-              Регистрация
-            </a>
-            <a href="#auth" className="hover:text-gray-900">
-              Вход
-            </a>
+            {!isAuthed ? (
+              <>
+                <Link to="/register" className="hover:text-gray-900">
+                  Регистрация
+                </Link>
+                <Link to="/login" className="hover:text-gray-900">
+                  Вход
+                </Link>
+              </>
+            ) : (
+              <Link to="/logout" className="hover:text-gray-900">
+                Выйти
+              </Link>
+            )}
           </div>
         </div>
       </footer>
+
+      {/* Auth modal */}
+      {authModalOpen && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-lg">
+            <div className="text-lg font-extrabold">Нужна авторизация</div>
+            <p className="mt-1 text-sm text-gray-600">
+              Чтобы связаться с собственником, войдите или зарегистрируйтесь.
+            </p>
+            <div className="mt-4 flex gap-2">
+              <Link
+                to="/login"
+                className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-center text-sm font-extrabold hover:bg-gray-50"
+              >
+                Войти
+              </Link>
+              <Link
+                to="/register"
+                className="flex-1 rounded-xl bg-gray-900 px-3 py-2 text-center text-sm font-extrabold text-white hover:bg-gray-800"
+              >
+                Регистрация
+              </Link>
+            </div>
+            <button
+              className="mt-3 w-full rounded-xl px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+              type="button"
+              onClick={() => setAuthModalOpen(false)}
+            >
+              Закрыть
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

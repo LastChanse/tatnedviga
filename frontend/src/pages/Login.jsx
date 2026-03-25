@@ -24,7 +24,8 @@ function Login() {
   }, [location]);
 
   return (
-    <div className="auth-container">
+      <>
+    <div>
       <Form route="/api/token/" method="login" />
       <p className="auth-link">
         <Link to="/forgot-password">Forgot Password?</Link>
@@ -33,6 +34,7 @@ function Login() {
         Don't have an account? <Link to="/register">Register here</Link>
       </p>
     </div>
+          </>
   );
 }
 

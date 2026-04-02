@@ -1,162 +1,175 @@
-# Django-React Full Stack Application - Template
+# Татнедвижимость
 
-A modern full-stack web application built with Django REST Framework (DRF) for the backend and React for the frontend. This template provides a solid foundation for building scalable web applications with user authentication and a clean, responsive UI.
+Современное полнофункциональное веб-приложение, построенное с
+использованием Django REST Framework (DRF) для бэкенда и React для
+фронтенда.
 
-## 🌟 Features
+## 🔗 Связанные файлы проекта
 
-- **User Authentication**
+- [📘 База знаний](./BASE.md)
+- [📋 Правила работы](./RULES.md)
+- [🗂 Список задач](./TODO.md)
 
-  - JWT-based authentication
-  - Secure login/logout functionality
-  - Protected routes
+## 🌟 Возможности
 
-- **Frontend**
+-   **Аутентификация пользователей**
 
-  - Built with React 18 and Vite
-  - Responsive design with CSS variables for theming
-  - Client-side routing with React Router
+    -   Аутентификация на основе JWT
+    -   Безопасный вход/выход
+    -   Защищённые маршруты
 
-- **Backend**
-  - Django REST Framework for API endpoints
-  - SQLite database (can be easily switched to PostgreSQL)
-  - JWT authentication
-  - CORS headers configured
+-   **Фронтенд**
 
-## 🛠 Project Structure
+    -   Построен на React 18 и Vite
+    -   Адаптивный дизайн с Taiwind CSS и Ant Design
+    -   Клиентская маршрутизация с React Router
 
-```
-Django-React-Template/
-├── backend/                  # Django project
-│   ├── api/                  # Main app with API endpoints
-│   ├── backend/              # Project settings and configurations
-│   ├── manage.py
-│   └── requirements.txt
-│
-├── frontend/                 # React frontend
-│   ├── public/               # Static files
-│   └── src/
-│       ├── components/       # Reusable UI components
-│       ├── pages/            # Page components
-│       ├── styles/           # Global styles and variables
-│       ├── App.jsx           # Main App component
-│       └── main.jsx          # Entry point
-│
-├── .env.example             # Example environment variables
-└── README.md                # This file
-```
+-   **Бэкенд**
 
-## 🚀 Quick Start
+    -   Django REST Framework для API
+    -   База данных SQLite (легко заменить на PostgreSQL)
+    -   JWT-аутентификация
+    -   Настроены CORS-заголовки
 
-### Prerequisites
+## 🛠 Структура проекта
 
-- Python 3.8+
-- Node.js 16+
-- npm or yarn
+    Django-React-Template/
+    ├── backend/                  # Django проект
+    │   ├── api/                  # Основное приложение с API
+    │   ├── backend/              # Настройки и конфигурации проекта
+    │   ├── manage.py
+    │   └── requirements.txt
+    │
+    ├── frontend/                 # React фронтенд
+    │   ├── public/               # Статические файлы
+    │   └── src/
+    │       ├── components/       # Переиспользуемые UI-компоненты
+    │       ├── pages/            # Страницы
+    │       ├── styles/           # Глобальные стили и переменные
+    │       ├── App.jsx           # Главный компонент
+    │       └── main.jsx          # Точка входа
+    │
+    ├── .env.example             # Пример переменных окружения
+    └── README.md                # Этот файл
 
-### Backend Setup
 
-1. **Create and activate virtual environment**
+## 🚀 Быстрый старт
 
-   ```bash
-   # Windows
-   python -m venv venv
-   .\venv\Scripts\activate
+### Требования
 
-   # macOS/Linux
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
+-   Python 3.8+
+-   Node.js 16+
+-   npm или yarn
 
-2. **Install Python dependencies**
+### Настройка бэкенда
 
-   ```bash
-   cd backend
-   pip install -r requirements.txt
-   ```
+1.  **Создать и активировать виртуальное окружение**
 
-3. **Set up environment variables**
+    ``` bash
+    # Windows
+    python -m venv venv
+    .\venv\Scripts\activate
 
-   Copy `.env.example` to `.env` in the project root and update the values:
+    # macOS/Linux
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
 
-   ```bash
-   cp .env.example .env
-   ```
+2.  **Установить зависимости Python**
 
-4. **Run migrations**
+    ``` bash
+    cd backend
+    pip install -r requirements.txt
+    ```
 
-   ```bash
-   python manage.py makemigrations
-   python manage.py migrate
-   ```
+3.  **Настроить переменные окружения**
 
-5. **Create superuser (optional)**
-   ```bash
-   python manage.py createsuperuser
-   ```
+    Скопируйте `.env.example` в `.env` и обновите значения:
 
-### Frontend Setup
+    ``` bash
+    cp .env.example .env
+    ```
 
-1. **Install Node.js dependencies**
+4.  **Выполнить миграции**
 
-   ```bash
-   cd frontend
-   npm install
-   # or
-   yarn install
-   ```
+    ``` bash
+    python manage.py makemigrations
+    python manage.py migrate
+    ```
 
-## 🏃 Running the Application
+5.  **Создать суперпользователя (необязательно)**
 
-1. **Start Django backend**
+    ``` bash
+    python manage.py createsuperuser
+    ```
 
-   ```bash
-   cd backend
-   python manage.py runserver
-   ```
+### Настройка фронтенда
 
-   - API: http://localhost:8000
-   - Admin: http://localhost:8000/admin
+1.  **Установить зависимости Node.js**
 
-2. **Start React frontend** (in a new terminal)
-   ```bash
-   cd frontend
-   npm run dev
-   ```
-   - Frontend: http://localhost:5173
+    ``` bash
+    cd frontend
+    npm install
+    # или
+    yarn install
+    ```
 
-## 🛠 Available Commands
+## 🏃 Запуск приложения
 
-### Backend
+1.  **Запуск Django бэкенда**
 
-- `python manage.py runserver` - Start development server
-- `python manage.py makemigrations` - Create new migrations
-- `python manage.py migrate` - Apply database migrations
-- `python manage.py createsuperuser` - Create admin user
+    ``` bash
+    cd backend
+    python manage.py runserver
+    ```
 
-### Frontend
+    -   API: http://localhost:8000
+    -   Админка: http://localhost:8000/admin
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run lint` - Lint code
-- `npm run preview` - Preview production build
+2.  **Запуск React фронтенда** (в новом терминале)
 
-## 🔧 Technologies Used
+    ``` bash
+    cd frontend
+    npm run dev
+    ```
 
-- **Frontend**
+    -   Фронтенд: http://localhost:5173
 
-  - React 18
-  - React Router 6
-  - Vite
-  - CSS Modules
-  - Axios for API requests
+## 🛠 Доступные команды
 
-- **Backend**
-  - Django 4.2
-  - Django REST Framework
-  - djangorestframework-simplejwt
-  - django-cors-headers
+### Бэкенд
 
-## 🙏 Acknowledgments
+-   `python manage.py runserver` --- Запуск сервера разработки
+-   `python manage.py makemigrations` --- Создание миграций
+-   `python manage.py migrate` --- Применение миграций
+-   `python manage.py createsuperuser` --- Создание администратора
 
-- Django and React communities for amazing documentation
-- Vite for the fast development experience
+### Фронтенд
+
+-   `npm run dev` --- Запуск сервера разработки
+-   `npm run build` --- Сборка для продакшена
+-   `npm run lint` --- Проверка кода
+-   `npm run preview` --- Предпросмотр сборки
+
+## 🔧 Используемые технологии
+
+-   **Фронтенд**
+
+    -   React 18
+    -   React Router 6
+    -   Vite
+    -   Tainwind CSS Modules
+    -   Ant design Modules
+    -   Axios для запросов к API
+
+-   **Бэкенд**
+
+    -   Django 4.2
+    -   Django REST Framework
+    -   djangorestframework-simplejwt
+    -   django-cors-headers
+
+## 🙏 Благодарности
+
+-   Сообществам Django и React за отличную документацию
+-   Vite за быстрый опыт разработки

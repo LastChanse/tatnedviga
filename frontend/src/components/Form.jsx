@@ -1,24 +1,21 @@
 import { useState } from "react";
-import api from "../api";
 import { useNavigate } from "react-router-dom";
+import { Form as AntForm, Input, Button, Card, Spin } from "antd";
+import api from "../api";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
-import "../styles/Form.css";
-import LoadingIndicator from "./LoadingIndicator";
 
-function Form({ route, method }) {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+export default function Form({ route, method }) {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const name = method === "login" ? "Login" : "Register";
+  const name = method === "login" ? "Вход" : "Регистрация";
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (values) => {
     setLoading(true);
-    e.preventDefault();
 
     try {
-      const res = await api.post(route, { username, password });
+      const res = await api.post(route, values);
+
       if (method === "login") {
         localStorage.setItem(ACCESS_TOKEN, res.data.access);
         localStorage.setItem(REFRESH_TOKEN, res.data.refresh);
@@ -27,35 +24,77 @@ function Form({ route, method }) {
         navigate("/login");
       }
     } catch (error) {
-      alert(error);
+      alert(error?.response?.data?.detail || "Ошибка");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="form-container">
-      <h1>{name}</h1>
-      <input
-        className="form-input"
-        type="text"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        placeholder="Username"
-      />
-      <input
-        className="form-input"
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder="Password"
-      />
-      {loading && <LoadingIndicator />}
-      <button className="form-button" type="submit">
-        {name}
-      </button>
-    </form>
+    <div className="min-h-screen bg-white flex items-center justify-center px-4">
+      <Card
+        className="w-full max-w-md rounded-2xl border border-gray-200 shadow-sm"
+        bodyStyle={{ padding: 24 }}
+      >
+        <h1 className="text-2xl font-extrabold text-gray-900 mb-6 text-center">
+          {name}
+        </h1>
+
+        <AntForm layout="vertical" onFinish={handleSubmit}>
+          <AntForm.Item
+            name="username"
+            rules={[{ required: true, message: "Введите логин" }]}
+          >
+            <Input
+              size="large"
+              placeholder="Логин"
+              className="rounded-xl"
+            />
+          </AntForm.Item>
+
+          <AntForm.Item
+            name="password"
+            rules={[{ required: true, message: "Введите пароль" }]}
+          >
+            <Input.Password
+              size="large"
+              placeholder="Пароль"
+              className="rounded-xl"
+            />
+          </AntForm.Item>
+
+          <AntForm.Item>
+            <Button
+              type="primary"
+              htmlType="submit"
+              block
+              size="large"
+              className="!rounded-xl !bg-gray-900 !border-gray-900 hover:!bg-gray-800"
+              disabled={loading}
+            >
+              {loading ? <Spin /> : name}
+            </Button>
+          </AntForm.Item>
+        </AntForm>
+
+        <div className="text-center text-sm text-gray-600 mt-2">
+          {method === "login" ? (
+            <>
+              Нет аккаунта?{" "}
+              <a href="/register" className="font-bold text-gray-900 hover:underline">
+                Зарегистрироваться
+              </a>
+            </>
+          ) : (
+            <>
+              Уже есть аккаунт?{" "}
+              <a href="/login" className="font-bold text-gray-900 hover:underline">
+                Войти
+              </a>
+            </>
+          )}
+        </div>
+      </Card>
+    </div>
   );
 }
-
-export default Form;

@@ -102,7 +102,7 @@ export default function HomePage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="h-3 w-3 rounded-full bg-gray-900" />
-            <span className="font-extrabold tracking-tight">Недвижимость</span>
+            <span className="font-extrabold tracking-tight text-gray-900">Недвижимость</span>
           </div>
 
           <nav className="flex items-center gap-2">
@@ -145,7 +145,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl px-4 py-10">
           <div className="grid gap-6 lg:grid-cols-[1fr,360px] lg:items-start">
             <div>
-              <h1 className="text-3xl font-extrabold leading-tight md:text-4xl">
+              <h1 className="text-3xl font-extrabold leading-tight text-gray-900 md:text-4xl">
                 Найдите жильё для аренды или покупки
               </h1>
               <p className="mt-3 max-w-2xl text-gray-600">
@@ -154,7 +154,7 @@ export default function HomePage() {
 
               <div className="mt-5 flex flex-wrap gap-2">
                 <input
-                  className="w-full flex-1 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-gray-400 md:min-w-[520px]"
+                  className="w-full flex-1 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-gray-400 placeholder:text-gray-400"
                   placeholder="Поиск по объектам (адрес, тип, характеристики)…"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -172,14 +172,14 @@ export default function HomePage() {
             {/* CTA card вместо видимых форм */}
             {!isAuthed && (
               <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                <div className="text-sm font-extrabold">Чтобы связаться с собственником</div>
+                <div className="text-sm font-extrabold text-gray-900">Чтобы связаться с собственником</div>
                 <p className="mt-1 text-sm text-gray-600">
                   Войдите или зарегистрируйтесь — это займёт минуту.
                 </p>
                 <div className="mt-3 flex gap-2">
                   <Link
                     to="/login"
-                    className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-center text-sm font-extrabold hover:bg-gray-50"
+                    className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-center text-sm font-extrabold text-gray-900 hover:bg-gray-50"
                   >
                     Войти
                   </Link>
@@ -203,7 +203,7 @@ export default function HomePage() {
       <main id="catalog" className="py-8">
         <div className="mx-auto max-w-6xl px-4">
           <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
-            <h2 className="text-xl font-extrabold">Каталог недвижимости</h2>
+            <h2 className="text-xl font-extrabold text-gray-900">Каталог недвижимости</h2>
             <div className="text-sm text-gray-600">
               Найдено: <span className="font-extrabold text-gray-900">{filtered.length}</span>
             </div>
@@ -212,7 +212,7 @@ export default function HomePage() {
           <div className="grid gap-4 lg:grid-cols-[320px,1fr]">
             {/* Filters */}
             <aside className="top-[76px] h-fit rounded-2xl border border-gray-200 bg-white p-4 lg:sticky">
-              <h3 className="mb-3 text-base font-extrabold">Фильтры</h3>
+              <h3 className="mb-3 text-base font-extrabold text-gray-900">Фильтры</h3>
 
               <div className="mb-3">
                 <label className="mb-1.5 block text-xs font-semibold text-gray-600">Тип сделки</label>
@@ -222,7 +222,9 @@ export default function HomePage() {
                     onClick={() => setDealType("rent")}
                     className={[
                       "flex-1 rounded-xl px-3 py-2 text-sm font-bold",
-                      dealType === "rent" ? "border border-gray-200 bg-white" : "text-gray-700 hover:bg-white/60",
+                      dealType === "rent"
+                        ? "border border-gray-200 bg-white text-gray-900"
+                        : "text-gray-700 hover:bg-white/60",
                     ].join(" ")}
                   >
                     Аренда
@@ -232,7 +234,9 @@ export default function HomePage() {
                     onClick={() => setDealType("buy")}
                     className={[
                       "flex-1 rounded-xl px-3 py-2 text-sm font-bold",
-                      dealType === "buy" ? "border border-gray-200 bg-white" : "text-gray-700 hover:bg-white/60",
+                      dealType === "buy"
+                        ? "border border-gray-200 bg-white text-gray-900"
+                        : "text-gray-700 hover:bg-white/60",
                     ].join(" ")}
                   >
                     Покупка
@@ -245,7 +249,7 @@ export default function HomePage() {
                   Тип недвижимости
                 </label>
                 <select
-                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-gray-400"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-400"
                   value={propertyType}
                   onChange={(e) => setPropertyType(e.target.value)}
                 >
@@ -262,14 +266,14 @@ export default function HomePage() {
                 </label>
                 <div className="flex gap-2">
                   <input
-                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-gray-400"
+                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-400 placeholder:text-gray-400"
                     placeholder="От"
                     inputMode="numeric"
                     value={priceMin}
                     onChange={(e) => setPriceMin(e.target.value.replace(/[^\d]/g, ""))}
                   />
                   <input
-                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-gray-400"
+                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-400 placeholder:text-gray-400"
                     placeholder="До"
                     inputMode="numeric"
                     value={priceMax}
@@ -284,7 +288,7 @@ export default function HomePage() {
               <div className="mb-4">
                 <label className="mb-1.5 block text-xs font-semibold text-gray-600">Район</label>
                 <select
-                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-gray-400"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-400"
                   value={district}
                   onChange={(e) => setDistrict(e.target.value)}
                 >
@@ -338,8 +342,8 @@ export default function HomePage() {
 
                       <div className="p-4">
                         <div className="flex items-start justify-between gap-3">
-                          <h4 className="text-base font-extrabold leading-snug">{item.title}</h4>
-                          <div className="whitespace-nowrap text-sm font-extrabold">
+                          <h4 className="text-base font-extrabold leading-snug text-gray-900">{item.title}</h4>
+                          <div className="whitespace-nowrap text-sm font-extrabold text-gray-900">
                             {formatPrice(item.price)}
                           </div>
                         </div>
@@ -383,22 +387,22 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t border-gray-200 py-6">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 text-sm text-gray-600">
-          <div>© {new Date().getFullYear()} Платформа недвижимости</div>
+          <div className="text-gray-600">© {new Date().getFullYear()} Платформа недвижимости</div>
           <div className="flex items-center gap-3">
-            <a href="#catalog" className="hover:text-gray-900">
+            <a href="#catalog" className="text-gray-600 hover:text-gray-900">
               Каталог
             </a>
             {!isAuthed ? (
               <>
-                <Link to="/register" className="hover:text-gray-900">
+                <Link to="/register" className="text-gray-600 hover:text-gray-900">
                   Регистрация
                 </Link>
-                <Link to="/login" className="hover:text-gray-900">
+                <Link to="/login" className="text-gray-600 hover:text-gray-900">
                   Вход
                 </Link>
               </>
             ) : (
-              <Link to="/logout" className="hover:text-gray-900">
+              <Link to="/logout" className="text-gray-600 hover:text-gray-900">
                 Выйти
               </Link>
             )}
@@ -410,14 +414,14 @@ export default function HomePage() {
       {authModalOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-lg">
-            <div className="text-lg font-extrabold">Нужна авторизация</div>
+            <div className="text-lg font-extrabold text-gray-900">Нужна авторизация</div>
             <p className="mt-1 text-sm text-gray-600">
               Чтобы связаться с собственником, войдите или зарегистрируйтесь.
             </p>
             <div className="mt-4 flex gap-2">
               <Link
                 to="/login"
-                className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-center text-sm font-extrabold hover:bg-gray-50"
+                className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-center text-sm font-extrabold text-gray-900 hover:bg-gray-50"
               >
                 Войти
               </Link>

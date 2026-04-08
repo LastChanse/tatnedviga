@@ -11,7 +11,7 @@ export default function HomePage() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
   // ПРИМЕР: подставь свою логику (token, user, cookie и т.д.)
-  const isAuthed = Boolean(localStorage.getItem("access_token") || localStorage.getItem("token"));
+  const isAuthed = Boolean(localStorage.getItem("access") || localStorage.getItem("token"));
 
   const listings = useMemo(
     () => [

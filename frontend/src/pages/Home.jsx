@@ -129,12 +129,20 @@ export default function HomePage() {
                 </Link>
               </>
             ) : (
+              <>
+              <Link
+                to="/profile"
+                className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100"
+              >
+                Профиль
+              </Link>
               <Link
                 to="/logout"
                 className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100"
               >
                 Выйти
               </Link>
+              </>
             )}
           </nav>
         </div>

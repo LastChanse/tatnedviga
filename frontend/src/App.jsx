@@ -7,6 +7,7 @@ import ResetPassword from "./pages/ResetPassword"
 import Home from "./pages/Home"
 import NotFound from "./pages/NotFound"
 import ProtectedRoute from "./components/ProtectedRoute"
+import Profile from "./pages/Profile.jsx";
 
 function Logout() {
   localStorage.clear()
@@ -31,6 +32,7 @@ function App() {
           }
         />
         <Route path="/login" element={<Login />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:uidb64/:token/" element={<ResetPassword />} />
         <Route path="/logout" element={<Logout />} />

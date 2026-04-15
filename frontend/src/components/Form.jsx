@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Form as AntForm, Input, Button, Card, Spin } from "antd";
 import api from "../api";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
+import { Select } from "antd";
 
+const { Option } = Select;
 export default function Form({ route, method }) {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
   const name = method === "login" ? "Вход" : "Регистрация";
 
   const handleSubmit = async (values) => {
@@ -40,27 +41,32 @@ export default function Form({ route, method }) {
           {name}
         </h1>
 
-        <AntForm layout="vertical" onFinish={handleSubmit}>
+        <AntForm layout="vertical" onFinish={handleSubmit} initialValues={{ role: "client" }}>
+
+          {method === "register" && (
+            <AntForm.Item
+              name="role"
+              rules={[{ required: true, message: "Выберите роль" }]}
+            >
+              <Select placeholder="Выберите роль">
+                <Option value="client">Клиент</Option>
+                <Option value="owner">Собственник</Option>
+              </Select>
+            </AntForm.Item>
+          )}
+
           <AntForm.Item
             name="username"
             rules={[{ required: true, message: "Введите логин" }]}
           >
-            <Input
-              size="large"
-              placeholder="Логин"
-              className="rounded-xl"
-            />
+            <Input size="large" placeholder="Логин" className="rounded-xl" />
           </AntForm.Item>
 
           <AntForm.Item
             name="password"
             rules={[{ required: true, message: "Введите пароль" }]}
           >
-            <Input.Password
-              size="large"
-              placeholder="Пароль"
-              className="rounded-xl"
-            />
+            <Input.Password size="large" placeholder="Пароль" className="rounded-xl" />
           </AntForm.Item>
 
           <AntForm.Item>
@@ -75,6 +81,7 @@ export default function Form({ route, method }) {
               {loading ? <Spin /> : name}
             </Button>
           </AntForm.Item>
+
         </AntForm>
 
         <div className="text-center text-sm text-gray-600 mt-2">

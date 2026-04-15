@@ -176,33 +176,6 @@ export default function HomePage() {
                 </button>
               </div>
             </div>
-
-            {/* CTA card вместо видимых форм */}
-            {!isAuthed && (
-              <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                <div className="text-sm font-extrabold text-gray-900">Чтобы связаться с собственником</div>
-                <p className="mt-1 text-sm text-gray-600">
-                  Войдите или зарегистрируйтесь — это займёт минуту.
-                </p>
-                <div className="mt-3 flex gap-2">
-                  <Link
-                    to="/login"
-                    className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-center text-sm font-extrabold text-gray-900 hover:bg-gray-50"
-                  >
-                    Войти
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="flex-1 rounded-xl bg-gray-900 px-3 py-2 text-center text-sm font-extrabold text-white hover:bg-gray-800"
-                  >
-                    Регистрация
-                  </Link>
-                </div>
-                <div className="mt-3 text-xs text-gray-500">
-                  Демо-данные. Реальные контакты скрыты без авторизации.
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </section>
@@ -396,25 +369,6 @@ export default function HomePage() {
       <footer className="border-t border-gray-200 py-6">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 text-sm text-gray-600">
           <div className="text-gray-600">© {new Date().getFullYear()} Платформа недвижимости</div>
-          <div className="flex items-center gap-3">
-            <a href="#catalog" className="text-gray-600 hover:text-gray-900">
-              Каталог
-            </a>
-            {!isAuthed ? (
-              <>
-                <Link to="/register" className="text-gray-600 hover:text-gray-900">
-                  Регистрация
-                </Link>
-                <Link to="/login" className="text-gray-600 hover:text-gray-900">
-                  Вход
-                </Link>
-              </>
-            ) : (
-              <Link to="/logout" className="text-gray-600 hover:text-gray-900">
-                Выйти
-              </Link>
-            )}
-          </div>
         </div>
       </footer>
 

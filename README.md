@@ -135,6 +135,39 @@
 
     -   Фронтенд: http://localhost:5173
 
+## Запуск в `Docker`
+
+* Сборка образов и запуск всех сервисов
+
+```bash
+docker-compose up --build
+```
+
+* Остановить и полностью удалить все данные
+
+```bash
+docker-compose down -v
+```
+
+* Если нужно применить новые миграции или перезагрузить сервер:
+```bash
+docker-compose restart backend
+```
+
+* Применение миграций без перезапуска
+```bash
+docker exec -it tatnedviga-backend bash
+
+python manage.py makemigrations
+python manage.py migrate
+```
+
+**‼️ Большинство проблем решаются через последовательность команд:**
+```bash
+docker-compose down -v
+docker-compose up --build
+```
+
 ## 🛠 Доступные команды
 
 ### Бэкенд

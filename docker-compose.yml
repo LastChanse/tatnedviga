@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: tatnedviga-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - backend_db:/app/backend
+    env_file:
+      - ./.env
+    environment:
+      - DEBUG=1
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,backend
+    networks:
+      - tatnedviga-network
+
+  frontend:
+    build: ./frontend
+    container_name: tatnedviga-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app/frontend
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    networks:
+      - tatnedviga-network
+
+volumes:
+  backend_db:
+
+networks:
+  tatnedviga-network:
+    driver: bridge

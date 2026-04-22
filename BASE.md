@@ -512,3 +512,61 @@ Authorization: Bearer <token>
 
 Аутентификация → роли → профиль
 
+# 🐳 Docker (контейнеризация)
+
+## Реализовано:
+
+- полная контейнеризация фронтенда и бэкенда
+- запуск всего проекта одной командой
+- автоматическое применение миграций при старте
+- горячая перезагрузка кода при разработке
+- общие переменные окружения через `.env`
+
+---
+
+## 🔹 Структура
+
+tatnedviga/
+├── backend/
+│ ├── Dockerfile
+│ └── entrypoint.sh
+├── frontend/
+│ └── Dockerfile
+└── docker-compose.yml
+
+🔹 Основные команды
+Первый запуск
+``bash
+docker compose up --build
+```
+
+Остановка
+```bash
+docker compose down
+```
+
+Остановка с удалением данных
+```bash
+docker compose down -v
+```
+
+Перезапуск бэкенда
+```bash
+docker compose restart backend
+```
+
+Зайти в контейнер бэкенда
+```bash
+docker exec -it tatnedviga-backend bash
+```
+
+Применить миграции вручную (если нужно)
+```bash
+docker exec -it tatnedviga-backend python manage.py migrate
+```
+
+🔹 Порты
+Сервис | Внутренний | порт |	Внешний порт |	URL
+| --- | --- | --- | --- | --- |
+Бэкенд | (Django)	| 8000  |	8000 |	http://localhost:8000
+Фронтенд | (Vite)	| 5173 |	5173 |	http://localhost:5173

@@ -1,62 +1,26 @@
-import React, { useMemo, useState } from "react";
+import React, {useEffect, useMemo, useState} from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
 
 export default function HomePage() {
-  const [dealType, setDealType] = useState("rent"); // rent | buy
-  const [propertyType, setPropertyType] = useState("any"); // any | apartment | house | commercial
-  const [district, setDistrict] = useState("any"); // any | center | north | south
+  const [dealType, setDealType] = useState("rent");
+  const [propertyType, setPropertyType] = useState("any");
+  const [district, setDistrict] = useState("any");
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
   const [query, setQuery] = useState("");
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
-  // ПРИМЕР: подставь свою логику (token, user, cookie и т.д.)
   const isAuthed = Boolean(localStorage.getItem("access") || localStorage.getItem("token"));
 
-  const listings = useMemo(
-    () => [
-      {
-        id: 1,
-        title: "1-комн. квартира, 38 м²",
-        address: "Центральный район",
-        price: 45000,
-        deal: "rent",
-        type: "apartment",
-        district: "center",
-        status: "available", // available | sold | rented
-        features: ["38 м²", "2/9 этаж", "Метро 7 мин"],
-        image:
-          "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1400&q=80",
-      },
-      {
-        id: 2,
-        title: "Дом, 140 м², участок 6 сот.",
-        address: "Северный район",
-        price: 12900000,
-        deal: "buy",
-        type: "house",
-        district: "north",
-        status: "sold",
-        features: ["140 м²", "3 спальни", "Гараж"],
-        image:
-          "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1400&q=80",
-      },
-      {
-        id: 3,
-        title: "Студия, 24 м²",
-        address: "Южный район",
-        price: 32000,
-        deal: "rent",
-        type: "apartment",
-        district: "south",
-        status: "rented",
-        features: ["24 м²", "Новый ремонт", "Балкон"],
-        image:
-          "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1400&q=80",
-      },
-    ],
-    []
-  );
+  const [listings, setListings] = useState([]);
+  
+  useEffect(() => {
+    axios
+      .get("http://localhost:8000/api/properties/")
+      .then((res) => setListings(res.data))
+      .catch((err) => console.error(err));
+  }, []);
 
   const filtered = useMemo(() => {
     const min = priceMin === "" ? null : Number(priceMin);
@@ -65,7 +29,7 @@ export default function HomePage() {
 
     return listings
       .filter((x) => (dealType ? x.deal === dealType : true))
-      .filter((x) => (propertyType === "any" ? true : x.type === propertyType))
+      .filter((x) => (propertyType === "any" ? true : x.property_type === propertyType))
       .filter((x) => (district === "any" ? true : x.district === district))
       .filter((x) => (min === null ? true : x.price >= min))
       .filter((x) => (max === null ? true : x.price <= max))
@@ -73,8 +37,8 @@ export default function HomePage() {
         if (!q) return true;
         return (
           x.title.toLowerCase().includes(q) ||
-          x.address.toLowerCase().includes(q) ||
-          x.features.join(" ").toLowerCase().includes(q)
+          x.district.toLowerCase().includes(q) ||
+          (x.description && x.description.toLowerCase().includes(q))
         );
       });
   }, [listings, dealType, propertyType, district, priceMin, priceMax, query]);
@@ -95,17 +59,31 @@ export default function HomePage() {
     }
   };
 
+  const typeLabels = {
+    'apartment': 'Квартира',
+    'house': 'Дом',
+    'commercial': 'Коммерческая'
+  };
+
   return (
     <div className="min-h-screen bg-white text-gray-900">
       {/* Header */}
       <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
-          <div className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2">
             <span className="h-3 w-3 rounded-full bg-gray-900" />
             <span className="font-extrabold tracking-tight text-gray-900">Недвижимость</span>
-          </div>
+          </Link>
 
           <nav className="flex items-center gap-2">
+            {localStorage.getItem("role") === "owner" && (
+              <Link
+                to="/create-property"
+                className="rounded-xl bg-emerald-600 px-3 py-2 text-sm font-extrabold text-white hover:bg-emerald-700"
+              >
+                + Добавить объект
+              </Link>
+            )}
             <a
               href="#catalog"
               className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100"
@@ -130,18 +108,18 @@ export default function HomePage() {
               </>
             ) : (
               <>
-              <Link
-                to="/profile"
-                className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100"
-              >
-                Профиль
-              </Link>
-              <Link
-                to="/logout"
-                className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100"
-              >
-                Выйти
-              </Link>
+                <Link
+                  to="/profile"
+                  className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100"
+                >
+                  Профиль
+                </Link>
+                <Link
+                  to="/logout"
+                  className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100"
+                >
+                  Выйти
+                </Link>
               </>
             )}
           </nav>
@@ -262,7 +240,7 @@ export default function HomePage() {
                   />
                 </div>
                 <div className="mt-2 text-xs text-gray-500">
-                  {dealType === "rent" ? "₽/мес" : "₽"} — демо, без валидации.
+                  {dealType === "rent" ? "₽/мес" : "₽"}
                 </div>
               </div>
 
@@ -309,46 +287,49 @@ export default function HomePage() {
                       key={item.id}
                       className="overflow-hidden rounded-2xl border border-gray-200 bg-white"
                     >
-                      <div className="relative h-44 bg-gray-100">
-                        <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
-                        <span
-                          className={[
-                            "absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-extrabold",
-                            s.cls,
-                          ].join(" ")}
-                        >
-                          {s.label}
-                        </span>
-                      </div>
-
-                      <div className="p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <h4 className="text-base font-extrabold leading-snug text-gray-900">{item.title}</h4>
-                          <div className="whitespace-nowrap text-sm font-extrabold text-gray-900">
-                            {formatPrice(item.price)}
-                          </div>
+                      <Link to={`/property/${item.id}`}>
+                        <div className="relative h-44 bg-gray-100">
+                          <img 
+                            src={item.image || 'https://via.placeholder.com/300x200?text=Нет+фото'} 
+                            alt={item.title} 
+                            className="h-full w-full object-cover" 
+                          />
+                          <span
+                            className={[
+                              "absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-extrabold",
+                              s.cls,
+                            ].join(" ")}
+                          >
+                            {s.label}
+                          </span>
                         </div>
 
-                        <div className="mt-1 text-sm text-gray-600">{item.address}</div>
+                        <div className="p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <h4 className="text-base font-extrabold leading-snug text-gray-900">{item.title}</h4>
+                            <div className="whitespace-nowrap text-sm font-extrabold text-gray-900">
+                              {formatPrice(item.price)}
+                            </div>
+                          </div>
 
-                        <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-gray-700">
-                          {item.features.map((f, idx) => (
-                            <li key={idx}>{f}</li>
-                          ))}
-                        </ul>
+                          <div className="mt-1 text-sm text-gray-600">{item.district}</div>
+                          <div className="mt-1 text-sm text-gray-500">
+                            {typeLabels[item.property_type]} • {item.deal === 'rent' ? 'Аренда' : 'Продажа'}
+                          </div>
 
-                        <button
-                          className="mt-4 w-full rounded-xl border border-gray-900 bg-white px-3 py-2 text-sm font-extrabold text-gray-900 hover:bg-gray-50"
-                          type="button"
-                          onClick={() => {
-                            if (!isAuthed) return setAuthModalOpen(true);
-                            // тут будет действие "связаться"
-                            alert("Открыть чат/контакты (пока демо).");
-                          }}
-                        >
-                          Связаться
-                        </button>
-                      </div>
+                          <button
+                            className="mt-4 w-full rounded-xl border border-gray-900 bg-white px-3 py-2 text-sm font-extrabold text-gray-900 hover:bg-gray-50"
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (!isAuthed) return setAuthModalOpen(true);
+                              alert("Открыть чат/контакты (пока демо).");
+                            }}
+                          >
+                            Связаться
+                          </button>
+                        </div>
+                      </Link>
                     </article>
                   );
                 })}

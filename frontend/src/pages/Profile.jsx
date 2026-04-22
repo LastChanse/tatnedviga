@@ -148,7 +148,7 @@ function Profile() {
       });
   }, [form, navigate]);
 
-  const role = profile?.role || "user";
+  const role = profile?.role || "client";
   const roleConfig = useMemo(() => getRoleConfig(role), [role]);
 
   const handleLogout = () => {

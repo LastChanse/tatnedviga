@@ -75,11 +75,16 @@ if (user.role === "owner") {
 
 ```python
 class Property(models.Model):
+    owner = models.ForeignKey(...)
     title = models.CharField(...)
-    description = models.TextField()
-    price = models.DecimalField(...)
-    type = models.CharField(...)
-    deal_type = models.CharField(...)
+    description = models.TextField(...)
+    price = models.IntegerField(...)
+    deal = models.CharField(...)
+    property_type = models.CharField(...)
+    district = models.CharField(...)
+    status = models.CharField(...)
+    image = models.ImageField(...)
+    created_at = models.DateTimeField(...)
 ```
 
 ---

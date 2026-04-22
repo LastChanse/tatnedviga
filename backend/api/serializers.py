@@ -15,7 +15,10 @@ class UserSerializer(serializers.ModelSerializer):
         extra_kwargs = {"password": {"write_only": True}}
 
     def create(self, validated_data):
+        role = validated_data.pop('role', 'client')
         user = User.objects.create_user(**validated_data)
+        user.role = role
+        user.save()
         return user
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -25,7 +28,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     is_admin = serializers.SerializerMethodField()
     groups = serializers.SerializerMethodField()
-    role = serializers.SerializerMethodField()
+    role = serializers.CharField(read_only=True)
 
     class Meta:
         model = User
@@ -47,18 +50,6 @@ class ProfileSerializer(serializers.ModelSerializer):
     def get_groups(self, obj):
         return list(obj.groups.values_list("name", flat=True))
 
-    def get_role(self, obj):
-        if obj.is_staff or obj.is_superuser:
-            return "admin"
-
-        groups = {group.lower() for group in obj.groups.values_list("name", flat=True)}
-        publisher_groups = {"publisher", "seller", "agent", "realtor"}
-
-        if groups.intersection(publisher_groups):
-            return "publisher"
-
-        return "user"
-
     def update(self, instance, validated_data):
         password = validated_data.pop("password", None)
 
@@ -72,6 +63,8 @@ class ProfileSerializer(serializers.ModelSerializer):
         return instance
 
 class PropertySerializer(serializers.ModelSerializer):
+    owner_name = serializers.CharField(source='owner.username', read_only=True)
+    
     class Meta:
         model = Property
         fields = "__all__"

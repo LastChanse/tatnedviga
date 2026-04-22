@@ -8,7 +8,7 @@ function Navbar() {
     try {
       localStorage.removeItem(ACCESS_TOKEN);
       localStorage.removeItem(REFRESH_TOKEN);
-      localStorage.removeItem("user");
+      localStorage.removeItem("role");
       window.location.href = "/login";
     } catch (error) {
       console.error("Error during logout:", error);

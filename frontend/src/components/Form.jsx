@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Form as AntForm, Input, Button, Card, Spin } from "antd";
+import { Form as AntForm, Input, Button, Card, Spin, Select } from "antd";
 import api from "../api";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
-import { Select } from "antd";
+import axios from "axios";
 
 const { Option } = Select;
+
 export default function Form({ route, method }) {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -20,12 +21,39 @@ export default function Form({ route, method }) {
       if (method === "login") {
         localStorage.setItem(ACCESS_TOKEN, res.data.access);
         localStorage.setItem(REFRESH_TOKEN, res.data.refresh);
+
+        try {
+          const profileRes = await axios.get("http://localhost:8000/api/profile/", {
+            headers: { Authorization: `Bearer ${res.data.access}` }
+          });
+          localStorage.setItem("role", profileRes.data.role);
+        } catch (e) {
+          console.error("Не удалось получить роль:", e);
+          if (res.data.role) {
+            localStorage.setItem("role", res.data.role);
+          }
+        }
+
         navigate("/");
       } else {
-        navigate("/login");
+        try {
+          const loginRes = await api.post("/api/token/", {
+            username: values.username,
+            password: values.password
+          });
+          
+          localStorage.setItem(ACCESS_TOKEN, loginRes.data.access);
+          localStorage.setItem(REFRESH_TOKEN, loginRes.data.refresh);
+          localStorage.setItem("role", values.role || "client");
+          
+          navigate("/");
+        } catch (loginError) {
+          navigate("/login");
+        }
       }
     } catch (error) {
-      alert(error?.response?.data?.detail || "Ошибка");
+      console.error("Ошибка:", error);
+      alert(error?.response?.data?.detail || error?.response?.data?.username || "Ошибка");
     } finally {
       setLoading(false);
     }
@@ -35,26 +63,29 @@ export default function Form({ route, method }) {
     <div className="min-h-screen bg-white flex items-center justify-center px-4">
       <Card
         className="w-full max-w-md rounded-2xl border border-gray-200 shadow-sm"
-        bodyStyle={{ padding: 24 }}
+        styles={{ body: { padding: 24 } }}
       >
         <h1 className="text-2xl font-extrabold text-gray-900 mb-6 text-center">
           {name}
         </h1>
 
-        <AntForm layout="vertical" onFinish={handleSubmit} initialValues={{ role: "client" }}>
-
+        <AntForm 
+          layout="vertical" 
+          onFinish={handleSubmit} 
+          initialValues={{ role: "client" }}
+        >
           {method === "register" && (
             <AntForm.Item
               name="role"
               rules={[{ required: true, message: "Выберите роль" }]}
             >
-              <Select placeholder="Выберите роль">
+              <Select size="large" placeholder="Выберите роль" className="rounded-xl">
                 <Option value="client">Клиент</Option>
                 <Option value="owner">Собственник</Option>
               </Select>
             </AntForm.Item>
           )}
-
+      
           <AntForm.Item
             name="username"
             rules={[{ required: true, message: "Введите логин" }]}
@@ -81,7 +112,6 @@ export default function Form({ route, method }) {
               {loading ? <Spin /> : name}
             </Button>
           </AntForm.Item>
-
         </AntForm>
 
         <div className="text-center text-sm text-gray-600 mt-2">

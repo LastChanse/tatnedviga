@@ -113,6 +113,10 @@ function fetchProperties(filters) {
 }
 ```
 
+## Тестовый список недвижимости
+```bash
+cd backend && python manage.py create_test_properties
+```
 ---
 
 # ⭐ Избранное

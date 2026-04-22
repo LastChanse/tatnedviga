@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, {useEffect, useMemo, useState} from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
 
 export default function HomePage() {
   const [dealType, setDealType] = useState("rent"); // rent | buy
@@ -13,51 +14,58 @@ export default function HomePage() {
   // ПРИМЕР: подставь свою логику (token, user, cookie и т.д.)
   const isAuthed = Boolean(localStorage.getItem("access") || localStorage.getItem("token"));
 
-  const listings = useMemo(
-    () => [
-      {
-        id: 1,
-        title: "1-комн. квартира, 38 м²",
-        address: "Центральный район",
-        price: 45000,
-        deal: "rent",
-        type: "apartment",
-        district: "center",
-        status: "available", // available | sold | rented
-        features: ["38 м²", "2/9 этаж", "Метро 7 мин"],
-        image:
-          "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1400&q=80",
-      },
-      {
-        id: 2,
-        title: "Дом, 140 м², участок 6 сот.",
-        address: "Северный район",
-        price: 12900000,
-        deal: "buy",
-        type: "house",
-        district: "north",
-        status: "sold",
-        features: ["140 м²", "3 спальни", "Гараж"],
-        image:
-          "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1400&q=80",
-      },
-      {
-        id: 3,
-        title: "Студия, 24 м²",
-        address: "Южный район",
-        price: 32000,
-        deal: "rent",
-        type: "apartment",
-        district: "south",
-        status: "rented",
-        features: ["24 м²", "Новый ремонт", "Балкон"],
-        image:
-          "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1400&q=80",
-      },
-    ],
-    []
-  );
+  // const listings = useMemo(
+  //   () => [
+  //     {
+  //       id: 1,
+  //       title: "1-комн. квартира, 38 м²",
+  //       address: "Центральный район",
+  //       price: 45000,
+  //       deal: "rent",
+  //       type: "apartment",
+  //       district: "center",
+  //       status: "available", // available | sold | rented
+  //       features: ["38 м²", "2/9 этаж", "Метро 7 мин"],
+  //       image:
+  //         "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1400&q=80",
+  //     },
+  //     {
+  //       id: 2,
+  //       title: "Дом, 140 м², участок 6 сот.",
+  //       address: "Северный район",
+  //       price: 12900000,
+  //       deal: "buy",
+  //       type: "house",
+  //       district: "north",
+  //       status: "sold",
+  //       features: ["140 м²", "3 спальни", "Гараж"],
+  //       image:
+  //         "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1400&q=80",
+  //     },
+  //     {
+  //       id: 3,
+  //       title: "Студия, 24 м²",
+  //       address: "Южный район",
+  //       price: 32000,
+  //       deal: "rent",
+  //       type: "apartment",
+  //       district: "south",
+  //       status: "rented",
+  //       features: ["24 м²", "Новый ремонт", "Балкон"],
+  //       image:
+  //         "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1400&q=80",
+  //     },
+  //   ],
+  //   []
+  // );
 
+  const [listings, setListings] = useState([]);
+  useEffect(() => {
+  axios
+    .get("http://localhost:8000/api/properties/")
+    .then((res) => setListings(res.data))
+    .catch((err) => console.error(err));
+  }, []);
   const filtered = useMemo(() => {
     const min = priceMin === "" ? null : Number(priceMin);
     const max = priceMax === "" ? null : Number(priceMax);
@@ -95,6 +103,8 @@ export default function HomePage() {
     }
   };
 
+  const userRole = localStorage.getItem("role");
+
   return (
     <div className="min-h-screen bg-white text-gray-900">
       {/* Header */}
@@ -106,6 +116,14 @@ export default function HomePage() {
           </div>
 
           <nav className="flex items-center gap-2">
+            {/*{isAuthed && userRole === "owner" && (*/}
+            <Link
+              to="/create-property"
+              className="rounded-xl bg-emerald-600 px-3 py-2 text-sm font-extrabold text-white hover:bg-emerald-700"
+            >
+              + Добавить объект
+            </Link>
+          {/*)}*/}
             <a
               href="#catalog"
               className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100"

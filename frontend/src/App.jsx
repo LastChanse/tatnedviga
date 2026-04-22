@@ -1,4 +1,3 @@
-import React from "react"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import Login from "./pages/Login"
 import Register from "./pages/Register"
@@ -8,6 +7,7 @@ import Home from "./pages/Home"
 import NotFound from "./pages/NotFound"
 import ProtectedRoute from "./components/ProtectedRoute"
 import Profile from "./pages/Profile.jsx"
+import CreateProperty from "./pages/CreateProperty.jsx";
 
 function Logout() {
   localStorage.clear()
@@ -41,6 +41,7 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:uidb64/:token/" element={<ResetPassword />} />
         <Route path="/logout" element={<Logout />} />
+        <Route path="/create-property" element={<CreateProperty />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

@@ -241,5 +241,274 @@ login(email, password)
 
 ### API эндпоинт
 
-```http
-POST /api/register/
+# 👤 Профиль и разделение ролей
+
+## Реализовано:
+
+- добавлена кастомная модель пользователя (`CustomUser`)
+- добавлено поле `role` в БД
+- реализовано разделение ролей (client / owner + вычисляемые роли)
+- добавлен профиль пользователя (получение + обновление)
+- добавлена возможность смены пароля
+- реализован возврат дополнительных данных (`is_admin`, `groups`, `role`)
+- frontend обновлён: добавлена страница профиля и выбор роли при регистрации
+
+---
+
+## 🔹 Пользовательская модель
+
+### Модель
+
+```python
+class CustomUser(AbstractUser):
+    ROLE_CHOICES = (
+        ("client", "Клиент"),
+        ("owner", "Собственник"),
+    )
+
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+````
+
+### Поля:
+
+| Поле | Тип | Описание |
+| --- | --- | --- |
+| username | string | логин пользователя |
+| email | string | email |
+| password | string | пароль (хранится в хэшированном виде) |
+| role | string | роль (`client` или `owner`) |
+| is\_staff | boolean | доступ к админке |
+| is\_superuser | boolean | полный доступ |
+
+* * *
+
+🔹 Регистрация
+--------------
+
+### API
+
+```
+POST /api/user/register/
+```
+
+### Request:
+
+```
+{
+  "username": "string",
+  "email": "string",
+  "password": "string",
+  "role": "client | owner"
+}
+```
+
+### Описание параметров:
+
+| Поле | Тип | Обязательное | Описание |
+| --- | --- | --- | --- |
+| username | string | да | имя пользователя (≥ 3 символов) |
+| email | string | да | email |
+| password | string | да | пароль (≥ 6 символов) |
+| role | string | да | роль пользователя |
+
+* * *
+
+🔹 Профиль пользователя
+-----------------------
+
+### API
+
+#### Получение профиля
+
+```
+GET /api/profile/
+```
+
+#### Обновление профиля
+
+```
+PATCH /api/profile/
+```
+
+* * *
+
+🔹 Формат профиля
+-----------------
+
+```
+{
+  "id": 1,
+  "username": "user1",
+  "email": "user@mail.com",
+  "first_name": "Ivan",
+  "last_name": "Ivanov",
+  "is_admin": false,
+  "groups": [],
+  "role": "user"
+}
+```
+
+* * *
+
+🔹 ProfileSerializer
+--------------------
+
+### Поля:
+
+| Поле | Тип | Описание |
+| --- | --- | --- |
+| id | number | id пользователя |
+| username | string | логин |
+| email | string | email |
+| first\_name | string | имя |
+| last\_name | string | фамилия |
+| password | string | пароль (write-only) |
+| is\_admin | boolean | является ли администратором |
+| groups | array | список групп |
+| role | string | вычисляемая роль |
+
+* * *
+
+🔹 Логика функций
+-----------------
+
+### get\_is\_admin(obj)
+
+```
+def get_is_admin(self, obj):
+    return obj.is_staff or obj.is_superuser
+```
+
+**Параметры:**
+
+| Параметр | Тип | Описание |
+| --- | --- | --- |
+| obj | User | объект пользователя |
+
+**Возвращает:**
+
+*   `boolean` — является ли пользователь администратором
+
+* * *
+
+### get\_groups(obj)
+
+```
+def get_groups(self, obj):
+    return list(obj.groups.values_list("name", flat=True))
+```
+
+**Параметры:**
+
+| Параметр | Тип | Описание |
+| --- | --- | --- |
+| obj | User | объект пользователя |
+
+**Возвращает:**
+
+*   `array[string]` — список групп
+
+* * *
+
+### get\_role(obj)
+
+```
+def get_role(self, obj):
+    if obj.is_staff or obj.is_superuser:
+        return "admin"
+
+    groups = {group.lower() for group in obj.groups.values_list("name", flat=True)}
+    publisher_groups = {"publisher", "seller", "agent", "realtor"}
+
+    if groups.intersection(publisher_groups):
+        return "publisher"
+
+    return "user"
+```
+
+**Параметры:**
+
+| Параметр | Тип | Описание |
+| --- | --- | --- |
+| obj | User | объект пользователя |
+
+**Возвращает:**
+
+*   `string` — роль (`admin`, `publisher`, `user`)
+
+* * *
+
+### update(instance, validated\_data)
+
+```
+def update(self, instance, validated_data):
+    password = validated_data.pop("password", None)
+
+    for attr, value in validated_data.items():
+        setattr(instance, attr, value)
+
+    if password:
+        instance.set_password(password)
+
+    instance.save()
+    return instance
+```
+
+**Параметры:**
+
+| Параметр | Тип | Описание |
+| --- | --- | --- |
+| instance | User | текущий пользователь |
+| validated\_data | dict | данные для обновления |
+
+**Поведение:**
+
+*   обновляет поля пользователя
+*   если передан пароль → хэшируется
+*   сохраняет изменения в БД
+
+* * *
+
+🔹 Frontend
+-----------
+
+### Регистрация (выбор роли)
+
+```
+<Select placeholder="Выберите роль">
+  <Option value="client">Клиент</Option>
+  <Option value="owner">Собственник</Option>
+</Select>
+```
+
+* * *
+
+### Профиль
+
+```
+<Route
+  path="/profile"
+  element={
+    <ProtectedRoute>
+      <Profile />
+    </ProtectedRoute>
+  }
+/>
+```
+
+* * *
+
+🔹 Интеграция
+-------------
+
+```
+Authorization: Bearer <token>
+```
+
+* * *
+
+⚠️ Зависимости между задачами
+-----------------------------
+
+Аутентификация → роли → профиль
+

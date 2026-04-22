@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from django.contrib.auth import get_user_model
 
-from api.models import Property
+from api.models import Favorite, Property
 
 User = get_user_model()
 
@@ -69,3 +69,10 @@ class PropertySerializer(serializers.ModelSerializer):
         model = Property
         fields = "__all__"
         read_only_fields = ("owner",)
+
+class FavoriteSerializer(serializers.ModelSerializer):
+    property = PropertySerializer(read_only=True)
+    
+    class Meta:
+        model = Favorite
+        fields = ['id', 'property', 'created_at']

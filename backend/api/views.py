@@ -1,10 +1,12 @@
 from django.contrib.auth import get_user_model
 from rest_framework import generics, permissions, viewsets
 
-from .models import Property
-from .serializers import UserSerializer, ProfileSerializer, PropertySerializer
+from .models import Favorite, Property
+from .serializers import FavoriteSerializer, UserSerializer, ProfileSerializer, PropertySerializer
 from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 User = get_user_model()
 
@@ -40,3 +42,25 @@ class PropertyViewSet(viewsets.ModelViewSet):
         if self.action == "create":
             return [IsOwnerUser()]
         return [permissions.AllowAny()]
+    
+class FavoriteViewSet(viewsets.ModelViewSet):
+    serializer_class = FavoriteSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'post', 'delete']
+
+    def get_queryset(self):
+        return Favorite.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=['post'])
+    def toggle(self, request):
+        property_id = request.data.get('property_id')
+        favorite = Favorite.objects.filter(user=request.user, property_id=property_id).first()
+        if favorite:
+            favorite.delete()
+            return Response({'status': 'removed'})
+        else:
+            Favorite.objects.create(user=request.user, property_id=property_id)
+            return Response({'status': 'added'})

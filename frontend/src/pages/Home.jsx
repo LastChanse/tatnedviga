@@ -1,5 +1,7 @@
 import React, {useEffect, useMemo, useState} from "react";
 import { Link } from "react-router-dom";
+import { HeartOutlined, HeartFilled } from '@ant-design/icons';
+import { favoriteService } from '../services/favoriteService';
 import axios from "axios";
 
 export default function HomePage() {
@@ -10,6 +12,8 @@ export default function HomePage() {
   const [priceMax, setPriceMax] = useState("");
   const [query, setQuery] = useState("");
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  
+  const [favorites, setFavorites] = useState(new Set());
 
   const isAuthed = Boolean(localStorage.getItem("access") || localStorage.getItem("token"));
 
@@ -21,6 +25,33 @@ export default function HomePage() {
       .then((res) => setListings(res.data))
       .catch((err) => console.error(err));
   }, []);
+
+  useEffect(() => {
+    if (isAuthed) {
+      favoriteService.getFavorites()
+        .then(data => setFavorites(new Set(data.map(f => f.property.id))))
+        .catch(console.error);
+    }
+  }, [isAuthed]);
+
+  const toggleFavorite = async (e, propertyId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAuthed) {
+      setAuthModalOpen(true);
+      return;
+    }
+    try {
+      const result = await favoriteService.toggleFavorite(propertyId);
+      setFavorites(prev => {
+        const next = new Set(prev);
+        result.status === 'added' ? next.add(propertyId) : next.delete(propertyId);
+        return next;
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const filtered = useMemo(() => {
     const min = priceMin === "" ? null : Number(priceMin);
@@ -91,6 +122,14 @@ export default function HomePage() {
               Каталог
             </a>
 
+            {isAuthed && (
+              <Link
+                to="/favorites"
+                className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100"
+              >
+                Избранное
+              </Link>
+            )}
             {!isAuthed ? (
               <>
                 <Link
@@ -302,6 +341,17 @@ export default function HomePage() {
                           >
                             {s.label}
                           </span>
+
+                          {}
+                          <button
+                            onClick={(e) => toggleFavorite(e, item.id)}
+                            className="absolute top-3 right-3 z-20 p-2 rounded-full bg-white/80 backdrop-blur hover:bg-white shadow-sm"
+                          >
+                            {favorites.has(item.id) 
+                              ? <HeartFilled className="text-red-500 text-lg" />
+                              : <HeartOutlined className="text-gray-700 text-lg" />
+                            }
+                          </button>
                         </div>
 
                         <div className="p-4">

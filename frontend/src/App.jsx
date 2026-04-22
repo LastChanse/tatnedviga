@@ -9,6 +9,7 @@ import ProtectedRoute from "./components/ProtectedRoute"
 import Profile from "./pages/Profile.jsx"
 import CreateProperty from "./pages/CreateProperty.jsx"
 import PropertyDetail from "./pages/PropertyDetail.jsx"
+import Favorites from './pages/Favorites';
 
 function Logout() {
   localStorage.clear()
@@ -36,7 +37,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+        <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
         <Route path="/property/:id" element={<PropertyDetail />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

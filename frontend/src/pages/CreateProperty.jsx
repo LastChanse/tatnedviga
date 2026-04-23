@@ -17,9 +17,9 @@ export default function CreateProperty() {
     price: "",
     deal: "rent",
     property_type: "apartment",
-    district: "",
     status: "available",
-    image: ""
+    image: "",
+    address: ""
   });
 
   const handleChange = (e) => {
@@ -150,20 +150,34 @@ export default function CreateProperty() {
               </select>
             </div>
 
-            {/* Район */}
+            { /* Адрес */ }
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1.5">
-                Район <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="district"
-                value={formData.district}
-                onChange={handleChange}
-                required
-                placeholder="Например: Центральный"
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none"
-              />
+                <label className="block text-sm font-semibold text-gray-900 mb-1.5">
+                    Полный адрес (для карты)
+                </label>
+                <input
+                    type="text"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    placeholder="г. Москва, ул. Тверская, д. 1"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-gray-900"
+                />
+            </div>
+
+            {/* Адрес */}
+            <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-1.5">
+                    Полный адрес
+                </label>
+                <input
+                    type="text"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    placeholder="г. Казань, ул. Баумана, д. 5"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-gray-900"
+                />
             </div>
 
             {/* Статус */}

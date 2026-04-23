@@ -84,10 +84,11 @@
 
 3.  **Настроить переменные окружения**
 
-    Скопируйте `.env.example` в `.env` и обновите значения:
+    Скопируйте `.env.example` в `.env`, `frontend/.env.example` в `frontend/.env` и обновите значения:
 
     ``` bash
     cp .env.example .env
+    cp frontend/.env.example frontend/.env
     ```
 
 4.  **Выполнить миграции**

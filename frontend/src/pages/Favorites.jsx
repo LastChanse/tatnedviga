@@ -199,7 +199,7 @@ export default function Favorites() {
                                                     </div>
                                                 </div>
 
-                                                <div className="mt-1 text-sm text-gray-600">{property.district}</div>
+                                                <div className="mt-1 text-sm text-gray-600">{property.address || 'Адрес не указан'}</div>
                                                 <div className="mt-1 text-sm text-gray-500">
                                                     {typeLabels[property.property_type]} • {property.deal === 'rent' ? 'Аренда' : 'Продажа'}
                                                 </div>

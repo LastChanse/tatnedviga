@@ -10,6 +10,7 @@ import Profile from "./pages/Profile.jsx"
 import CreateProperty from "./pages/CreateProperty.jsx"
 import PropertyDetail from "./pages/PropertyDetail.jsx"
 import Favorites from './pages/Favorites';
+import MapView from './pages/MapView';
 
 function Logout() {
   localStorage.clear()
@@ -57,6 +58,7 @@ function App() {
           } 
         />
         <Route path="*" element={<NotFound />} />
+        <Route path="/map" element={<MapView />} />
       </Routes>
     </BrowserRouter>
   )

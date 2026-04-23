@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { HeartOutlined, HeartFilled } from '@ant-design/icons';
+import { favoriteService } from '../services/favoriteService';
 import axios from 'axios';
 
 export default function PropertyDetail() {
@@ -8,6 +10,33 @@ export default function PropertyDetail() {
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const [isFavorite, setIsFavorite] = useState(false);
+  const isAuthed = Boolean(localStorage.getItem("access") || localStorage.getItem("token"));
+
+  useEffect(() => {
+    if (isAuthed && id) {
+      favoriteService.getFavorites()
+        .then(data => {
+          const fav = data.find(f => f.property.id === parseInt(id));
+          setIsFavorite(!!fav);
+        })
+        .catch(console.error);
+    }
+  }, [isAuthed, id]);
+
+  const toggleFavorite = async () => {
+    if (!isAuthed) {
+      navigate('/login');
+      return;
+    }
+    try {
+      const result = await favoriteService.toggleFavorite(id);
+      setIsFavorite(result.status === 'added');
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
     const fetchProperty = async () => {
@@ -99,10 +128,21 @@ export default function PropertyDetail() {
           />
         </div>
 
-        {/* Price */}
-        <div className="text-3xl font-extrabold text-gray-900 mb-4">
-          {formatPrice(property.price)}
-          {property.deal === 'rent' && ' /мес'}
+        {/* Price + Favorite */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-3xl font-extrabold text-gray-900">
+            {formatPrice(property.price)}
+            {property.deal === 'rent' && ' /мес'}
+          </div>
+          <button
+            onClick={toggleFavorite}
+            className="p-3 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+          >
+            {isFavorite 
+              ? <HeartFilled className="text-red-500 text-2xl" />
+              : <HeartOutlined className="text-gray-700 text-2xl" />
+            }
+          </button>
         </div>
 
         {/* Tags */}
@@ -121,8 +161,8 @@ export default function PropertyDetail() {
         {/* Info cards */}
         <div className="grid gap-4 md:grid-cols-3 mb-6">
         <div className="p-4 bg-gray-100 rounded-xl border border-gray-200">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Район</div>
-            <div className="font-bold text-gray-900 text-lg">{property.district}</div>
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Адрес</div>
+            <div className="font-bold text-gray-900">{property.address || 'Не указан'}</div>
         </div>
         
         <div className="p-4 bg-gray-100 rounded-xl border border-gray-200">

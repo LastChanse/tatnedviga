@@ -145,3 +145,5 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOWS_CREDENTIALS = True
+
+YANDEX_API_KEY = os.getenv('YANDEX_API_KEY')

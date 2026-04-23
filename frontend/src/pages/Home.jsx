@@ -54,25 +54,24 @@ export default function HomePage() {
   };
 
   const filtered = useMemo(() => {
-    const min = priceMin === "" ? null : Number(priceMin);
-    const max = priceMax === "" ? null : Number(priceMax);
-    const q = query.trim().toLowerCase();
+  const min = priceMin === "" ? null : Number(priceMin);
+  const max = priceMax === "" ? null : Number(priceMax);
+  const q = query.trim().toLowerCase();
 
-    return listings
-      .filter((x) => (dealType ? x.deal === dealType : true))
-      .filter((x) => (propertyType === "any" ? true : x.property_type === propertyType))
-      .filter((x) => (district === "any" ? true : x.district === district))
-      .filter((x) => (min === null ? true : x.price >= min))
-      .filter((x) => (max === null ? true : x.price <= max))
-      .filter((x) => {
-        if (!q) return true;
-        return (
-          x.title.toLowerCase().includes(q) ||
-          x.district.toLowerCase().includes(q) ||
-          (x.description && x.description.toLowerCase().includes(q))
-        );
-      });
-  }, [listings, dealType, propertyType, district, priceMin, priceMax, query]);
+  return listings
+    .filter((x) => (dealType ? x.deal === dealType : true))
+    .filter((x) => (propertyType === "any" ? true : x.property_type === propertyType))
+    .filter((x) => (min === null ? true : x.price >= min))
+    .filter((x) => (max === null ? true : x.price <= max))
+    .filter((x) => {
+      if (!q) return true;
+      return (
+        x.title?.toLowerCase().includes(q) ||
+        x.address?.toLowerCase().includes(q) ||
+        x.description?.toLowerCase().includes(q)
+      );
+    });
+  }, [listings, dealType, propertyType, priceMin, priceMax, query]);
 
   const formatPrice = (n) =>
     new Intl.NumberFormat("ru-RU").format(n) + (dealType === "rent" ? " ₽/мес" : " ₽");
@@ -130,6 +129,9 @@ export default function HomePage() {
                 Избранное
               </Link>
             )}
+            <Link to="/map" className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100">
+                Карта
+            </Link>
             {!isAuthed ? (
               <>
                 <Link
@@ -283,20 +285,6 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="mb-4">
-                <label className="mb-1.5 block text-xs font-semibold text-gray-600">Район</label>
-                <select
-                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-400"
-                  value={district}
-                  onChange={(e) => setDistrict(e.target.value)}
-                >
-                  <option value="any">Любой</option>
-                  <option value="center">Центральный</option>
-                  <option value="north">Северный</option>
-                  <option value="south">Южный</option>
-                </select>
-              </div>
-
               <div className="h-px w-full bg-gray-200" />
 
               <button
@@ -362,7 +350,7 @@ export default function HomePage() {
                             </div>
                           </div>
 
-                          <div className="mt-1 text-sm text-gray-600">{item.district}</div>
+                          <div className="mt-1 text-sm text-gray-600">{item.address || 'Адрес не указан'}</div>
                           <div className="mt-1 text-sm text-gray-500">
                             {typeLabels[item.property_type]} • {item.deal === 'rent' ? 'Аренда' : 'Продажа'}
                           </div>

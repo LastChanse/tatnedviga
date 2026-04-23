@@ -3,6 +3,7 @@ from rest_framework import generics, permissions, viewsets
 
 from .models import Favorite, Property
 from .serializers import FavoriteSerializer, UserSerializer, ProfileSerializer, PropertySerializer
+from .services import geocode_address
 from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
@@ -42,6 +43,14 @@ class PropertyViewSet(viewsets.ModelViewSet):
         if self.action == "create":
             return [IsOwnerUser()]
         return [permissions.AllowAny()]
+    
+    def perform_create(self, serializer):
+        address = self.request.data.get('address', '')
+        if address:
+            lat, lon = geocode_address(address)
+            serializer.save(owner=self.request.user, latitude=lat, longitude=lon)
+        else:
+            serializer.save(owner=self.request.user)
     
 class FavoriteViewSet(viewsets.ModelViewSet):
     serializer_class = FavoriteSerializer

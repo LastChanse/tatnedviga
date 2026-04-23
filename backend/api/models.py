@@ -36,11 +36,13 @@ class Property(models.Model):
     price = models.IntegerField()
     deal = models.CharField(max_length=10, choices=DEAL_CHOICES)
     property_type = models.CharField(max_length=20, choices=TYPE_CHOICES)
-    district = models.CharField(max_length=50)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="available")
     image = models.ImageField(upload_to='properties/', blank=True, null=True)
-
     created_at = models.DateTimeField(auto_now_add=True)
+    address = models.CharField(max_length=500, blank=True, verbose_name='Полный адрес')
+    latitude = models.FloatField(null=True, blank=True, verbose_name='Широта')
+    longitude = models.FloatField(null=True, blank=True, verbose_name='Долгота')
+
 
     def __str__(self):
         return self.title

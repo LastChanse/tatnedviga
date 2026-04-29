@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Button, Modal, Form, DatePicker, TimePicker, message, List, Tag, Space } from 'antd';
-import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { useState, useEffect } from 'react';
+import { Button, Modal, Form, DatePicker, TimePicker, message, List, Tag, Space, Popconfirm } from 'antd';
+import { EyeOutlined, EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs from 'dayjs';
+import {requestService} from "../services/requestService.js";
 
 const ViewingRequests = ({ propertyId, isOwner }) => {
   const [requests, setRequests] = useState([]);
@@ -11,93 +12,116 @@ const ViewingRequests = ({ propertyId, isOwner }) => {
   const [form] = Form.useForm();
   const [editingId, setEditingId] = useState(null);
 
-  const fetchRequests = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('access');
-      const response = await axios.get(`/api/viewing-requests/?property=${propertyId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setRequests(response.data);
-    } catch (error) {
-      message.error('Ошибка при загрузке заявок');
-    } finally {
-      setLoading(false);
+ const fetchRequests = async (propertyId) => {
+  try {
+    setLoading(true);
+    if (!propertyId) {
+      throw new Error('Не указан ID объекта недвижимости');
     }
-  };
+    const data = await requestService.getRequestsByProperty(propertyId);
+    setRequests(data);
+  } catch (error) {
+    console.error('Ошибка загрузки заявок:', error);
+    message.error(
+      error.response?.data?.message ||
+      error.message ||
+      'Ошибка при загрузке заявок'
+    );
+    setRequests([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
-  useEffect(() => {
-    fetchRequests();
-  }, [propertyId]);
+useEffect(() => {
+  fetchRequests(propertyId);
+}, [propertyId]);
 
-  const handleSubmit = async (values) => {
-    try {
-      const token = localStorage.getItem('access');
-      const data = {
-        property: propertyId,
-        requested_date: values.date.format('YYYY-MM-DD'),
-        requested_time: values.time.format('HH:mm'),
-        message: values.message
-      };
+const handleSubmit = async (values) => {
+    const { date, time, message } = values;
 
-      if (editingId) {
-        await axios.put(`/api/viewing-requests/${editingId}/`, data, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        message.success('Заявка обновлена');
-      } else {
-        await axios.post('/api/viewing-requests/', data, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        message.success('Заявка отправлена');
-      }
+    // Format dates
+    const formattedDate = date.format('YYYY-MM-DD');
+    const formattedTime = time.format('HH:mm');
 
-      setModalVisible(false);
-      form.resetFields();
-      setEditingId(null);
-      fetchRequests();
-    } catch (error) {
-      message.error('Ошибка при отправке заявки');
-    }
-  };
-
-  const handleCancelRequest = async (id) => {
-    try {
-      const token = localStorage.getItem('access');
-      await axios.delete(`/api/viewing-requests/${id}/`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      message.success('Заявка отменена');
-      fetchRequests();
-    } catch (error) {
-      message.error('Ошибка при отмене заявки');
-    }
-  };
-
-  const handleEditRequest = (request) => {
-    setEditingId(request.id);
-    form.setFieldsValue({
-      date: dayjs(request.requested_date),
-      time: dayjs(request.requested_time, 'HH:mm'),
-      message: request.message
+    console.log('Submitting:', {
+      propertyId,
+      formattedDate,
+      formattedTime,
+      message
     });
-    setModalVisible(true);
-  };
+
+    if (editingId) {
+      await requestService.updateRequest(
+        editingId,
+        formattedDate,
+        formattedTime,
+        message
+      );
+      message.success('Request updated');
+    } else {
+      await requestService.createViewingRequest(
+        propertyId,
+        formattedDate,
+        formattedTime,
+        message
+      );
+      message.success('Request created');
+    }
+
+    setModalVisible(false);
+    form.resetFields();
+    setEditingId(null);
+    fetchRequests(propertyId);
+};
+
+const handleCancelRequest = async (id) => {
+  try {
+    await requestService.deleteRequest(id);
+    message.success('Заявка отменена');
+    fetchRequests(propertyId);
+  } catch (error) {
+    message.error('Ошибка при отмене заявки');
+  }
+};
+
+const handleStatusChange = async (id, status) => {
+  try {
+    await requestService.changeStatus(id, status);
+    message.success(status === 'approved' ? 'Заявка подтверждена' : 'Заявка отклонена');
+    fetchRequests(propertyId);
+  } catch (error) {
+    message.error('Ошибка при изменении статуса');
+  }
+};
+
+const handleEditRequest = (request) => {
+  setEditingId(request.id);
+  form.setFieldsValue({
+    date: dayjs(request.requested_date),
+    time: dayjs(request.requested_time, 'HH:mm'),
+    message: request.message
+  });
+  setModalVisible(true);
+};
 
   const getStatusTag = (status) => {
     const statusMap = {
       pending: { color: 'orange', text: 'На рассмотрении' },
       approved: { color: 'green', text: 'Подтверждена' },
       rejected: { color: 'red', text: 'Отклонена' },
-      completed: { color: 'blue', text: 'Завершена' }
+      completed: { color: 'blue', text: 'Завершена' },
+      default: { color: 'gray', text: status }
     };
-    return <Tag color={statusMap[status].color}>{statusMap[status].text}</Tag>;
+
+    const currentStatus = statusMap[status] || statusMap.default;
+    return <Tag color={currentStatus.color}>{currentStatus.text}</Tag>;
   };
 
   return (
-    <div className="mt-6">
+    <div className="mt-6 ml-4 mr-4">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">Заявки на просмотр</h3>
+        <h3 className="text-xl font-extrabold text-gray-900 mb-3">Заявки на просмотр</h3>
         {!isOwner && (
           <Button
             type="primary"
@@ -121,12 +145,14 @@ const ViewingRequests = ({ propertyId, isOwner }) => {
                   icon={<EditOutlined />}
                   onClick={() => handleEditRequest(request)}
                 />,
-                <Button
-                  type="text"
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={() => handleCancelRequest(request.id)}
-                />
+                <Popconfirm
+                  title="Вы уверены, что хотите отменить заявку?"
+                  onConfirm={() => handleCancelRequest(request.id)}
+                  okText="Да"
+                  cancelText="Нет"
+                >
+                  <Button type="text" danger icon={<DeleteOutlined />} />
+                </Popconfirm>
               ] : []
             }
           >
@@ -144,40 +170,16 @@ const ViewingRequests = ({ propertyId, isOwner }) => {
                 <Button
                   type="primary"
                   size="small"
-                  onClick={async () => {
-                    try {
-                      const token = localStorage.getItem('access');
-                      await axios.patch(`/api/viewing-requests/${request.id}/`, {
-                        status: 'approved'
-                      }, {
-                        headers: { Authorization: `Bearer ${token}` }
-                      });
-                      message.success('Заявка подтверждена');
-                      fetchRequests();
-                    } catch (error) {
-                      message.error('Ошибка при подтверждении заявки');
-                    }
-                  }}
+                  icon={<CheckOutlined />}
+                  onClick={() => handleStatusChange(request.id, 'approved')}
                 >
                   Подтвердить
                 </Button>
                 <Button
                   danger
                   size="small"
-                  onClick={async () => {
-                    try {
-                      const token = localStorage.getItem('access');
-                      await axios.patch(`/api/viewing-requests/${request.id}/`, {
-                        status: 'rejected'
-                      }, {
-                        headers: { Authorization: `Bearer ${token}` }
-                      });
-                      message.success('Заявка отклонена');
-                      fetchRequests();
-                    } catch (error) {
-                      message.error('Ошибка при отклонении заявки');
-                    }
-                  }}
+                  icon={<CloseOutlined />}
+                  onClick={() => handleStatusChange(request.id, 'rejected')}
                 >
                   Отклонить
                 </Button>
@@ -197,6 +199,7 @@ const ViewingRequests = ({ propertyId, isOwner }) => {
           setEditingId(null);
         }}
         footer={null}
+        destroyOnClose
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item

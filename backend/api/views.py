@@ -1,7 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-from rest_framework import generics, permissions, viewsets, status
+from rest_framework import generics, permissions, viewsets, status, serializers
 
+from .admin import models
 from .models import Favorite, Property, ViewingRequest
 from .serializers import FavoriteSerializer, UserSerializer, ProfileSerializer, PropertySerializer, \
     ViewingRequestSerializer
@@ -77,57 +78,27 @@ class FavoriteViewSet(viewsets.ModelViewSet):
             return Response({'status': 'added'})
 
 
+# views.py
+# views.py
+# views.py
 class ViewingRequestViewSet(viewsets.ModelViewSet):
+    queryset = ViewingRequest.objects.all()
     serializer_class = ViewingRequestSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        queryset = ViewingRequest.objects.all()
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
-        # Фильтрация по объекту недвижимости
-        property_id = self.request.query_params.get('property')
-        if property_id:
-            queryset = queryset.filter(property_id=property_id)
+    def create(self, request, *args, **kwargs):
+        print("Incoming data:", request.data)
+        print("Authenticated user:", request.user)
+        print("User ID:", request.user.id)
 
-        # Владельцы видят все заявки на свои объекты
-        if self.request.user.role == 'owner':
-            return queryset.filter(property__owner=self.request.user)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
 
-        # Клиенты видят только свои заявки
-        return queryset.filter(user=self.request.user)
-
-    def perform_create(self, serializer):
-        property_id = self.request.data.get('property')
-        property = get_object_or_404(Property, id=property_id)
-
-        # Проверка, что пользователь не владелец объекта
-        if property.owner == self.request.user:
-            return Response(
-                {'detail': 'Владелец не может создавать заявки на свои объекты'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        serializer.save(user=self.request.user, status='pending')
-
-    @action(detail=True, methods=['patch'])
-    def approve(self, request, pk=None):
-        return self._change_status(pk, 'approved')
-
-    @action(detail=True, methods=['patch'])
-    def reject(self, request, pk=None):
-        return self._change_status(pk, 'rejected')
-
-    def _change_status(self, pk, new_status):
-        viewing_request = self.get_object()
-
-        # Проверка, что текущий пользователь - владелец объекта
-        if viewing_request.property.owner != self.request.user:
-            return Response(
-                {'detail': 'Только владелец может изменять статус заявки'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        viewing_request.status = new_status
-        viewing_request.save()
-        serializer = self.get_serializer(viewing_request)
-        return Response(serializer.data)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)

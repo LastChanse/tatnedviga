@@ -770,3 +770,133 @@ await axios.delete(
     headers: { 'Authorization': `Bearer ${token}` }
   }
 );
+
+
+# 🗺️ Яндекс.Карты и геокодинг
+
+## Реализовано:
+
+- интеграция Яндекс.Карт с отображением объектов недвижимости
+- автоматическое определение координат по адресу (геокодинг)
+- динамическая фильтрация объектов на карте
+- хранение координат в базе данных
+- безопасное хранение API ключа через переменные окружения
+
+---
+
+## 🔹 Модель (добавленные поля)
+
+```python
+class Property(models.Model):
+    address = models.CharField(max_length=500, blank=True, verbose_name='Полный адрес')
+    latitude = models.FloatField(null=True, blank=True, verbose_name='Широта')
+    longitude = models.FloatField(null=True, blank=True, verbose_name='Долгота')
+
+def geocode_address(address):
+  """Получает координаты по адресу через Яндекс.Геокодер"""
+  # Запрос к API Яндекса
+  # Возвращает (latitude, longitude) или (None, None)
+```
+
+## Фильтры на карте
+    * Тип сделки (аренда/продажа)
+    * Тип недвижимости (квартира/дом/коммерческая)
+    * Диапазон цены
+    * Сброс фильтров
+
+## API ключ
+Получение ключа
+   * Зайти в Кабинет разработчика Яндекса
+   * Создать ключ для JavaScript API и Геокодера
+
+   * В ограничениях по HTTP Referrer указать:
+     * localhost
+     * 127.0.0.1
+
+## Переменные окружения
+
+```bash
+backend/.env:
+YANDEX_API_KEY=your-key-here
+
+frontend/.env:
+VITE_YANDEX_MAPS_API_KEY=your-key-here
+```
+
+🔹 Тестовые данные
+```bash
+cd backend && python manage.py create_test_properties
+```
+
+Создает 12 объектов недвижимости в Казани с реальными адресами и координатами.
+
+# ⭐ Избранное
+## Реализовано:
+  * добавление/удаление объектов в избранное
+  * страница со списком избранных объектов
+  * кнопка избранного в карточках каталога
+  * кнопка избранного на странице объекта
+  * подсчет количества избранных объектов
+
+🔹 Модель
+```
+python
+
+class Favorite(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='favorites')
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='favorited_by')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['user', 'property']
+
+```
+
+🔹 API
+Получение избранного
+```http
+GET /api/favorites/
+```
+
+Добавить/удалить (toggle)
+```http
+POST /api/favorites/toggle/
+```
+
+```json
+{
+  "property_id": 1
+}
+```
+
+Удалить из избранного
+```http
+DELETE /api/favorites/:id/
+```
+
+🔹 Frontend
+Компонент избранного
+```jsx
+
+<button onClick={(e) => toggleFavorite(e, item.id)}>
+  {isFavorite ? <HeartFilled /> : <HeartOutlined />}
+</button>
+```
+
+Страница избранного (/favorites)
+ * Сетка карточек как в каталоге
+ * Кнопка удаления на каждой карточке
+ * Счетчик объектов
+ * Пустое состояние с ссылкой на каталог
+
+🔹 Зависимости между задачами
+
+🏠 Тестовые данные
+Реализовано:
+  * management команда для создания тестовых объектов
+  * 12 объектов недвижимости в Казани
+  * реальные адреса с автоматическим геокодингом
+  * скачивание изображений по URL
+  * многопоточная загрузка изображений
+  * случайные статусы объектов (available/sold/rented)
+  * автоматическое создание тестового пользователя-owner

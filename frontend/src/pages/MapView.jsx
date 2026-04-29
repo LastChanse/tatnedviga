@@ -17,10 +17,13 @@ export default function MapView() {
     const isAuthed = Boolean(localStorage.getItem("access") || localStorage.getItem("token"));
     const apiKey = import.meta.env.VITE_YANDEX_MAPS_API_KEY;
 
-    // Загружаем скрипт Яндекс.Карт
     useEffect(() => {
-        if (window.ymaps) {
-            setMapLoaded(true);
+        const existingScript = document.querySelector(`script[src*="api-maps.yandex.ru"]`);
+        
+        if (existingScript) {
+            if (window.ymaps) {
+                window.ymaps.ready(() => setMapLoaded(true));
+            }
             return;
         }
 
@@ -32,14 +35,8 @@ export default function MapView() {
         };
         document.head.appendChild(script);
 
-        return () => {
-            if (script.parentNode) {
-                script.parentNode.removeChild(script);
-            }
-        };
     }, [apiKey]);
 
-    // Загружаем объекты
     useEffect(() => {
         axios.get("http://localhost:8000/api/properties/")
             .then(res => {
@@ -178,6 +175,15 @@ export default function MapView() {
             map.geoObjects.add(placemark);
         });
     }, [mapLoaded, filteredProperties, dealType, propertyType, priceMin, priceMax]);
+
+    useEffect(() => {
+        return () => {
+            if (mapInstanceRef.current) {
+                mapInstanceRef.current.destroy();
+                mapInstanceRef.current = null;
+            }
+        };
+    }, []);
 
     const typeLabels = {
         'apartment': 'Квартира',

@@ -5,6 +5,8 @@ from django.contrib.auth import get_user_model
 
 from api.models import Favorite, Property
 
+from api.models import ViewingRequest
+
 User = get_user_model()
 
 
@@ -76,3 +78,16 @@ class FavoriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Favorite
         fields = ['id', 'property', 'created_at']
+
+class ViewingRequestSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField()
+    property = serializers.StringRelatedField()
+
+    class Meta:
+        model = ViewingRequest
+        fields = [
+            'id', 'property', 'user', 'requested_date',
+            'requested_time', 'message', 'status',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['user', 'status', 'created_at', 'updated_at']

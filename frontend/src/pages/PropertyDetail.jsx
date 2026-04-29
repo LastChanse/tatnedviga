@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { HeartOutlined, HeartFilled } from '@ant-design/icons';
 import { favoriteService } from '../services/favoriteService';
 import axios from 'axios';
+import ViewingRequests from "../components/ViewingRequests.jsx";
 
 export default function PropertyDetail() {
   const { id } = useParams();
@@ -194,6 +195,12 @@ export default function PropertyDetail() {
         Связаться с владельцем
         </button>
       </main>
+
+
+        <ViewingRequests
+        propertyId={property.id}
+        isOwner={localStorage.getItem("role") === "owner"}
+      />
     </div>
   );
 }

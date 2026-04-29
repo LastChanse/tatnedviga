@@ -58,3 +58,38 @@ class Favorite(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.property.title}"
+
+class ViewingRequest(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'На рассмотрении'),
+        ('approved', 'Подтверждена'),
+        ('rejected', 'Отклонена'),
+        ('completed', 'Завершена'),
+    )
+
+    property = models.ForeignKey(
+        'Property',
+        on_delete=models.CASCADE,
+        related_name='viewing_requests'
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='viewing_requests'
+    )
+    requested_date = models.DateField()
+    requested_time = models.TimeField()
+    message = models.TextField(blank=True)
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default='pending'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-requested_date', '-requested_time']
+
+    def __str__(self):
+        return f"{self.user} - {self.property} ({self.status})"

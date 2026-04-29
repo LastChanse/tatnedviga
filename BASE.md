@@ -579,3 +579,194 @@ docker exec -it tatnedviga-backend python manage.py migrate
 | --- | --- | --- | --- | --- |
 Бэкенд | (Django)	| 8000  |	8000 |	http://localhost:8000
 Фронтенд | (Vite)	| 5173 |	5173 |	http://localhost:5173
+
+# 📅 Заявки на просмотр (Viewing Requests) - API Документация
+
+## 🔹 Базовый URL
+http://localhost:8000/api/viewing-requests/
+
+## 🔹 Аутентификация
+
+Все запросы требуют JWT токен в заголовке:
+Authorization: Bearer <access_token>
+
+---
+
+## 🔹 Эндпоинты API
+
+| Метод | Эндпоинт | Описание |
+|-------|----------|----------|
+| GET | `/api/viewing-requests/` | Получить список заявок |
+| GET | `/api/viewing-requests/?property={id}` | Фильтр по объекту |
+| POST | `/api/viewing-requests/` | Создать заявку |
+| GET | `/api/viewing-requests/{id}/` | Получить детали заявки |
+| PATCH | `/api/viewing-requests/{id}/` | Обновить заявку (частично) |
+| PUT | `/api/viewing-requests/{id}/` | Обновить заявку (полностью) |
+| DELETE | `/api/viewing-requests/{id}/` | Удалить заявку |
+
+---
+
+## 🔹 Модель данных
+
+| Поле | Тип | Обязательное | Описание |
+|------|-----|--------------|----------|
+| id | integer | - | Уникальный идентификатор |
+| property | integer | ✅ | ID объекта недвижимости |
+| user | integer | ✅ | ID пользователя (автоматически) |
+| requested_date | date (YYYY-MM-DD) | ✅ | Желаемая дата просмотра |
+| requested_time | time (HH:MM) | ✅ | Желаемое время просмотра |
+| message | string | ❌ | Комментарий (макс 500 символов) |
+| status | string | - | Статус заявки |
+| created_at | datetime | - | Дата создания |
+| updated_at | datetime | - | Дата обновления |
+
+### Статусы заявок
+
+| Значение | Описание |
+|----------|----------|
+| `pending` | На рассмотрении (по умолчанию) |
+| `approved` | Подтверждена |
+| `rejected` | Отклонена |
+
+---
+
+## 🔹 Примеры запросов и ответов
+
+### 1. POST - Создание заявки
+
+**Request:**
+```http
+POST /api/viewing-requests/
+Content-Type: application/json
+
+{
+  "property": 1,
+  "requested_date": "2026-04-30",
+  "requested_time": "14:30",
+  "message": "Хотел бы посмотреть квартиру"
+}
+```
+Response (201 Created):
+```http
+{
+  "id": 5,
+  "property": 1,
+  "requested_date": "2026-04-30",
+  "requested_time": "14:30:00",
+  "message": "Хотел бы посмотреть квартиру",
+  "status": "pending",
+  "created_at": "2026-04-29T09:00:00Z",
+  "updated_at": "2026-04-29T09:00:00Z"
+}
+```
+🔹 Форматы данных
+Дата
+
+    Формат: YYYY-MM-DD
+
+    Пример: 2026-04-30
+
+Время
+
+    Формат: HH:MM
+
+    Пример: 14:30
+
+Дата и время (автоматически)
+
+    Формат: ISO 8601
+
+    Пример: 2026-04-29T09:00:00Z
+🔹 Права доступа
+Действие	Клиент	Собственник	Админ
+Просмотр своих заявок	✅	✅	✅
+Просмотр заявок на свои объекты	❌	✅	✅
+Создание заявки	✅	✅	✅
+Редактирование своей заявки	✅*	✅	✅
+Изменение статуса заявки	❌	✅**	✅
+Удаление своей заявки	✅*	✅	✅
+Удаление любой заявки	❌	❌	✅
+
+🔹 Коды ошибок
+Статус	Описание
+200	OK - успешный запрос
+201	Created - заявка создана
+204	No Content - успешное удаление
+400	Bad Request - неверный формат данных
+401	Unauthorized - требуется аутентификация
+403	Forbidden - недостаточно прав
+404	Not Found - заявка не найдена
+500	Internal Server Error - ошибка сервера
+Пример ошибки 400
+json
+
+{
+  "requested_date": ["Enter a valid date in YYYY-MM-DD format"],
+  "requested_time": ["Enter a valid time in HH:MM format"]
+}
+
+Пример ошибки 401
+json
+
+{
+  "detail": "Authentication credentials were not provided."
+}
+
+Пример ошибки 403
+json
+
+{
+  "detail": "You do not have permission to perform this action."
+}
+
+Пример ошибки 404
+json
+
+{
+  "detail": "Not found."
+}
+
+🔹 Frontend пример (JavaScript)
+javascript
+
+// Создание заявки
+const response = await axios.post(
+  `${API_URL}/viewing-requests/`,
+  {
+    property: propertyId,
+    requested_date: "2026-04-30",
+    requested_time: "14:30",
+    message: "Хочу посмотреть"
+  },
+  {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  }
+);
+
+// Получение заявок по объекту
+const response = await axios.get(
+  `${API_URL}/viewing-requests/?property=${propertyId}`,
+  {
+    headers: { 'Authorization': `Bearer ${token}` }
+  }
+);
+
+// Обновление статуса
+const response = await axios.patch(
+  `${API_URL}/viewing-requests/${requestId}/`,
+  { status: "approved" },
+  {
+    headers: { 'Authorization': `Bearer ${token}` }
+  }
+);
+
+// Удаление заявки
+await axios.delete(
+  `${API_URL}/viewing-requests/${requestId}/`,
+  {
+    headers: { 'Authorization': `Bearer ${token}` }
+  }
+);

@@ -1,9 +1,12 @@
 from django.contrib.auth.models import User
+from django.utils import timezone
 from rest_framework import serializers
 
 from django.contrib.auth import get_user_model
 
 from api.models import Favorite, Property
+
+from api.models import ViewingRequest
 
 User = get_user_model()
 
@@ -76,3 +79,33 @@ class FavoriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Favorite
         fields = ['id', 'property', 'created_at']
+
+
+# serializers.py
+class ViewingRequestSerializer(serializers.ModelSerializer):
+    property = serializers.PrimaryKeyRelatedField(
+        queryset=Property.objects.all(),
+        error_messages={'does_not_exist': 'Property does not exist'}
+    )
+    requested_date = serializers.DateField(
+        input_formats=['%Y-%m-%d'],
+        error_messages={
+            'invalid': 'Enter a valid date in YYYY-MM-DD format'
+        }
+    )
+    requested_time = serializers.TimeField(
+        input_formats=['%H:%M'],
+        error_messages={
+            'invalid': 'Enter a valid time in HH:MM format'
+        }
+    )
+
+    class Meta:
+        model = ViewingRequest
+        fields = ['id', 'property', 'requested_date', 'requested_time', 'message', 'status', 'created_at', 'updated_at']
+        read_only_fields = ['status', 'created_at', 'updated_at']  # Remove 'user' from read_only_fields
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        validated_data['user'] = user
+        return super().create(validated_data)

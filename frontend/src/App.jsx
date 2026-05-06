@@ -48,13 +48,13 @@ function App() {
         <Route 
           path="/create-property" 
           element={
-            <ProtectedRoute>
-              {localStorage.getItem("role") === "owner" ? (
+            localStorage.getItem("role") === "owner" ? (
+              <ProtectedRoute>
                 <CreateProperty />
-              ) : (
-                <Navigate to="/" />
-              )}
-            </ProtectedRoute>
+              </ProtectedRoute>
+            ) : (
+              <Navigate to="/" />
+            )
           } 
         />
         <Route path="*" element={<NotFound />} />

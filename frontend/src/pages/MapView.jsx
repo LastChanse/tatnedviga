@@ -17,9 +17,10 @@ export default function MapView() {
     const isAuthed = Boolean(localStorage.getItem("access") || localStorage.getItem("token"));
     const apiKey = import.meta.env.VITE_YANDEX_MAPS_API_KEY;
 
+    // Загрузка API Яндекс.Карт
     useEffect(() => {
         const existingScript = document.querySelector(`script[src*="api-maps.yandex.ru"]`);
-        
+
         if (existingScript) {
             if (window.ymaps) {
                 window.ymaps.ready(() => setMapLoaded(true));
@@ -33,13 +34,18 @@ export default function MapView() {
         script.onload = () => {
             window.ymaps.ready(() => setMapLoaded(true));
         };
+        script.onerror = () => {
+            console.error('Ошибка загрузки Яндекс.Карт');
+            setMapLoaded(false);
+        };
         document.head.appendChild(script);
-
     }, [apiKey]);
 
+    // Загрузка объектов с бэкенда
     useEffect(() => {
         axios.get("http://localhost:8000/api/properties/")
             .then(res => {
+                console.log('Загружено объектов:', res.data.length);
                 setProperties(res.data);
                 setLoading(false);
             })
@@ -54,93 +60,37 @@ export default function MapView() {
         const min = priceMin === "" ? null : Number(priceMin);
         const max = priceMax === "" ? null : Number(priceMax);
 
-        return properties
+        const filtered = properties
             .filter(p => p.latitude && p.longitude)
             .filter(p => dealType ? p.deal === dealType : true)
             .filter(p => propertyType === "any" ? true : p.property_type === propertyType)
             .filter(p => min === null ? true : p.price >= min)
             .filter(p => max === null ? true : p.price <= max);
+
+        console.log('Отфильтровано объектов:', filtered.length);
+        return filtered;
     }, [properties, dealType, propertyType, priceMin, priceMax]);
 
-    // Инициализируем карту
-    useEffect(() => {
-        if (!mapLoaded || !filteredProperties.length) return;
+    // Функция добавления меток на карту
+    const addPlacemarksToMap = (map, properties) => {
+        if (!map || !window.ymaps) {
+            console.log('Карта или ymaps не инициализированы');
+            return;
+        }
 
-        const initMap = () => {
-            if (mapInstanceRef.current) return;
+        console.log('Добавление меток, количество:', properties.length);
 
-            const center = [55.7887, 49.1221]; // Казань
-
-            const map = new window.ymaps.Map(mapRef.current, {
-                center: center,
-                zoom: 12,
-                controls: ['zoomControl', 'fullscreenControl']
-            });
-
-            mapInstanceRef.current = map;
-
-            // Добавляем метки
-            if (filteredProperties.length > 0) {
-                const firstProp = filteredProperties[0];
-                map.setCenter([firstProp.latitude, firstProp.longitude]);
-                
-                filteredProperties.forEach(prop => {
-                    const placemark = new window.ymaps.Placemark(
-                        [prop.latitude, prop.longitude],
-                        {
-                            balloonContentHeader: `<strong>${prop.title}</strong>`,
-                            balloonContentBody: `
-                                <div style="min-width: 200px;">
-                                    <p style="margin: 5px 0; font-size: 16px; font-weight: bold; color: #1890ff;">
-                                        ${new Intl.NumberFormat("ru-RU").format(prop.price)} 
-                                        ${prop.deal === "rent" ? "₽/мес" : "₽"}
-                                    </p>
-                                    <p style="margin: 5px 0;">${prop.address || 'Адрес не указан'}</p>
-                                    <a href="/property/${prop.id}" style="
-                                        display: inline-block;
-                                        margin-top: 8px;
-                                        padding: 6px 12px;
-                                        background: #111827;
-                                        color: white;
-                                        text-decoration: none;
-                                        border-radius: 8px;
-                                        font-size: 12px;
-                                        font-weight: bold;
-                                    ">Подробнее →</a>
-                                </div>
-                            `,
-                            hintContent: prop.title
-                        },
-                        {
-                            preset: 'islands#blueHomeIcon',
-                            iconColor: prop.deal === 'rent' ? '#10b981' : '#3b82f6'
-                        }
-                    );
-                    map.geoObjects.add(placemark);
-                });
-            }
-        };
-
-        window.ymaps.ready(initMap);
-    }, [mapLoaded, filteredProperties]);
-
-    // Обновляем карту при изменении фильтров
-    useEffect(() => {
-        if (!mapLoaded || !mapInstanceRef.current) return;
-
-        const map = mapInstanceRef.current;
-        
         // Очищаем старые метки
         map.geoObjects.removeAll();
-        
-        if (filteredProperties.length === 0) return;
-        
-        // Центрируем карту по первому объекту
-        const firstProp = filteredProperties[0];
-        map.setCenter([firstProp.latitude, firstProp.longitude]);
 
-        // Добавляем новые метки
-        filteredProperties.forEach(prop => {
+        if (properties.length === 0) {
+            console.log('Нет объектов для отображения');
+            return;
+        }
+
+        properties.forEach((prop, index) => {
+            console.log(`Добавление метки ${index + 1}:`, prop.title, [prop.latitude, prop.longitude]);
+
             const placemark = new window.ymaps.Placemark(
                 [prop.latitude, prop.longitude],
                 {
@@ -174,8 +124,63 @@ export default function MapView() {
             );
             map.geoObjects.add(placemark);
         });
-    }, [mapLoaded, filteredProperties, dealType, propertyType, priceMin, priceMax]);
 
+        // Центрируем карту по первому объекту, если есть
+        if (properties.length > 0) {
+            const firstProp = properties[0];
+            map.setCenter([firstProp.latitude, firstProp.longitude], 14);
+            console.log('Карта отцентрирована на:', [firstProp.latitude, firstProp.longitude]);
+        }
+    };
+
+    // Инициализация карты
+    useEffect(() => {
+        if (!mapLoaded) return;
+        if (mapInstanceRef.current) return;
+
+        console.log('Инициализация карты...');
+
+        const initMap = () => {
+            const center = [55.7887, 49.1221]; // Казань
+
+            const map = new window.ymaps.Map(mapRef.current, {
+                center: center,
+                zoom: 12,
+                controls: ['zoomControl', 'fullscreenControl']
+            });
+
+            mapInstanceRef.current = map;
+            console.log('Карта создана');
+
+            // После создания карты применяем метки
+            addPlacemarksToMap(map, filteredProperties);
+        };
+
+        window.ymaps.ready(initMap);
+    }, [mapLoaded]); // Только при загрузке API
+
+    // Обновляем метки при изменении фильтров ИЛИ загрузке данных
+    useEffect(() => {
+        if (!mapLoaded || !mapInstanceRef.current) {
+            console.log('Пропуск обновления: карта не готова');
+            return;
+        }
+
+        console.log('Обновление меток из-за изменения данных/фильтров');
+        addPlacemarksToMap(mapInstanceRef.current, filteredProperties);
+    }, [mapLoaded, filteredProperties]); // Убрал лишние зависимости
+
+    // Отдельный эффект для принудительного обновления после загрузки объектов
+    useEffect(() => {
+        if (!mapLoaded || !mapInstanceRef.current || loading) {
+            return;
+        }
+
+        console.log('Принудительное обновление меток после загрузки объектов');
+        addPlacemarksToMap(mapInstanceRef.current, filteredProperties);
+    }, [mapLoaded, loading, filteredProperties]);
+
+    // Очистка при размонтировании
     useEffect(() => {
         return () => {
             if (mapInstanceRef.current) {
@@ -322,16 +327,15 @@ export default function MapView() {
 
                 {/* Карта */}
                 <main className="flex-1 relative">
-                    {loading || !mapLoaded ? (
-                        <div className="flex justify-center py-20">
+                    {!mapLoaded ? (
+                        <div className="flex justify-center items-center h-full">
                             <div className="text-gray-500">Загрузка карты...</div>
                         </div>
-                    ) : filteredProperties.length === 0 ? (
-                        <div className="flex justify-center py-20">
-                            <div className="text-gray-500">Нет объектов по фильтрам</div>
-                        </div>
                     ) : (
-                        <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
+                        <div
+                            ref={mapRef}
+                            style={{ width: '100%', height: '100%', backgroundColor: '#f0f2f5' }}
+                        />
                     )}
                 </main>
             </div>

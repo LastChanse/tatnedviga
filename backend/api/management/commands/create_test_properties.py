@@ -2,7 +2,7 @@ from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from api.models import Property
-
+from api.services import geocode_address
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import random
 import requests
@@ -136,20 +136,47 @@ class Command(BaseCommand):
                 'image_url': 'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Ftse2.mm.bing.net%2Fth%2Fid%2FOIP.r9RuN7n9ZvI6fjCqlrhS1QHaE7%3Fpid%3DApi&f=1&ipt=cad8f4388f92cad82b359e97606a9cd29732e53dbd1f8a6ade2e30b2fb03e0b5&ipo=images'
             },
         ]
-
+        # fallback координаты для Казани (реальные координаты)
+        COORDINATES = {
+            'Казань, улица Баумана, 5': (55.7963, 49.1064),
+            'Казань, проспект Победы, 100': (55.8074, 49.1076),
+            'Казань, улица Павлюхина, 57': (55.7722, 49.1165),
+            'Казань, посёлок Залесный, улица Садовая, 12': (55.7755, 49.2062),
+            'Казань, посёлок Борисоглебское, улица Лесная, 8': (55.7600, 49.4300),
+            'Казань, улица Декабристов, 81': (55.8130, 49.0900),
+            'Казань, улица Чистопольская, 20А': (55.8200, 49.1050),
+            'Казань, улица Академика Сахарова, 15': (55.7700, 49.1500),
+            'Казань, улица Минская, 25': (55.8000, 49.0500),
+            'Казань, улица Аделя Кутуя, 151': (55.7700, 49.1350),
+            'Казань, улица Кремлёвская, 15': (55.7909, 49.1110),
+            'Казань, СНТ Берёзка, улица 3-я Линия, 42': (55.8900, 49.0800),
+        }
         def create_property(prop_data):
             image_url = prop_data.pop('image_url', None)
             address = prop_data.pop('address', '')
             prop_data['status'] = random.choice(['available', 'sold', 'rented'])
             prop_data['owner'] = owner
-            
+
             if address:
-                from api.services import geocode_address
+                # Сначала пытаемся получить координаты через API
                 lat, lon = geocode_address(address)
+
+                # Если API не вернул координаты, используем fallback
+                if lat is None or lon is None:
+                    # Ищем в словаре fallback координат
+                    if address in COORDINATES:
+                        lat, lon = COORDINATES[address]
+                        self.stdout.write(
+                            self.style.WARNING(f"⚠️ Использую fallback координаты для: {address} -> {lat}, {lon}"))
+                    else:
+                        # Дефолтные координаты центра Казани
+                        lat, lon = (55.7887, 49.1221)
+                        self.stdout.write(self.style.WARNING(f"⚠️ Использую центр Казани для: {address}"))
+
                 prop_data['latitude'] = lat
                 prop_data['longitude'] = lon
                 prop_data['address'] = address
-            
+
             property_obj = Property.objects.create(**prop_data)
 
             if image_url:
@@ -158,9 +185,10 @@ class Command(BaseCommand):
                     if response.status_code == 200:
                         filename = f"property_{property_obj.id}.jpg"
                         property_obj.image.save(filename, ContentFile(response.content), save=True)
-                except:
-                    pass
-            
+                except Exception as e:
+                    self.stdout.write(
+                        self.style.WARNING(f"⚠️ Не удалось загрузить изображение для {property_obj.title}: {e}"))
+
             return f"✓ {property_obj.title}"
 
         with ThreadPoolExecutor(max_workers=16) as executor:

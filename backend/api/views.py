@@ -46,7 +46,7 @@ class PropertyViewSet(viewsets.ModelViewSet):
         if self.action == "create":
             return [IsOwnerUser()]
         return [permissions.AllowAny()]
-    
+
     def perform_create(self, serializer):
         address = self.request.data.get('address', '')
         if address:

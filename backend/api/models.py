@@ -46,7 +46,7 @@ class Property(models.Model):
 
     def __str__(self):
         return self.title
-    
+
 class Favorite(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='favorites')
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='favorited_by')

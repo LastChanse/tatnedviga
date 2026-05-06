@@ -194,13 +194,14 @@ export default function PropertyDetail() {
         >
         Связаться с владельцем
         </button>
-      </main>
-
 
         <ViewingRequests
         propertyId={property.id}
         isOwner={localStorage.getItem("role") === "owner"}
       />
+      </main>
+
+
     </div>
   );
 }

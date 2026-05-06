@@ -6,7 +6,6 @@ logger = logging.getLogger(__name__)
 
 
 def geocode_address(address):
-    """Получает координаты по адресу через Яндекс.Геокодер"""
     if not address:
         logger.warning(f"Пустой адрес")
         return None, None
@@ -22,16 +21,12 @@ def geocode_address(address):
         'format': 'json',
         'results': 1
     }
-
+    headers = {
+        'Referer': 'http://localhost:8000'
+    }
+    
     try:
-        response = requests.get(url, params=params, timeout=5)
-        logger.info(f"Статус ответа: {response.status_code}")
-
-        # Логируем тело ответа при ошибке
-        if response.status_code != 200:
-            logger.error(f"Ошибка API: {response.text}")
-            return None, None
-
+        response = requests.get(url, params=params, headers=headers, timeout=5)
         data = response.json()
 
         # Проверяем наличие ошибки в ответе

@@ -54,7 +54,7 @@ class PropertyViewSet(viewsets.ModelViewSet):
             serializer.save(owner=self.request.user, latitude=lat, longitude=lon)
         else:
             serializer.save(owner=self.request.user)
-    
+
 class FavoriteViewSet(viewsets.ModelViewSet):
     serializer_class = FavoriteSerializer
     permission_classes = [IsAuthenticated]
@@ -78,9 +78,6 @@ class FavoriteViewSet(viewsets.ModelViewSet):
             return Response({'status': 'added'})
 
 
-# views.py
-# views.py
-# views.py
 class ViewingRequestViewSet(viewsets.ModelViewSet):
     queryset = ViewingRequest.objects.all()
     serializer_class = ViewingRequestSerializer
@@ -102,3 +99,30 @@ class ViewingRequestViewSet(viewsets.ModelViewSet):
 
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def partial_update(self, request, *args, **kwargs):
+        viewing_request = self.get_object()
+
+        if viewing_request.property.owner != request.user:
+            return Response(
+                {'error': 'Only property owner can change request status'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        new_status = request.data.get('status')
+
+        if new_status:
+            valid_statuses = ['pending', 'approved', 'rejected', 'completed']
+            if new_status not in valid_statuses:
+                return Response(
+                    {'error': f'Invalid status. Must be one of: {valid_statuses}'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            viewing_request.status = new_status
+            viewing_request.save()
+
+            serializer = self.get_serializer(viewing_request)
+            return Response(serializer.data)
+
+        return super().partial_update(request, *args, **kwargs)

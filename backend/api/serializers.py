@@ -109,3 +109,8 @@ class ViewingRequestSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         validated_data['user'] = user
         return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        if 'status' in validated_data:
+            instance.status = validated_data['status']
+        return super().update(instance, validated_data)

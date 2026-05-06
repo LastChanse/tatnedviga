@@ -72,5 +72,34 @@ export const requestService = {
       { headers: { Authorization: `Bearer ${token}` } }
     );
     return response.data;
+  },
+  approveRequest: async (requestId) => {
+    const token = localStorage.getItem('access');
+    const response = await axios.post(
+      `${API_URL}/viewing-requests/${requestId}/approve/`,
+      {},
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    return response.data;
+  },
+
+  rejectRequest: async (requestId) => {
+    const token = localStorage.getItem('access');
+    const response = await axios.post(
+      `${API_URL}/viewing-requests/${requestId}/reject/`,
+      {},
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    return response.data;
   }
 };

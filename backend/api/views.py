@@ -100,29 +100,63 @@ class ViewingRequestViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-    def partial_update(self, request, *args, **kwargs):
+    @action(detail=True, methods=['post'], url_path='approve')
+    def approve(self, request, pk=None):
         viewing_request = self.get_object()
 
         if viewing_request.property.owner != request.user:
             return Response(
-                {'error': 'Only property owner can change request status'},
+                {'error': 'Only property owner can approve requests'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        new_status = request.data.get('status')
+        if viewing_request.status != 'pending':
+            return Response(
+                {'error': f'Cannot approve request with status: {viewing_request.status}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        if new_status:
-            valid_statuses = ['pending', 'approved', 'rejected', 'completed']
-            if new_status not in valid_statuses:
-                return Response(
-                    {'error': f'Invalid status. Must be one of: {valid_statuses}'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+        viewing_request.status = 'approved'
+        viewing_request.save()
 
-            viewing_request.status = new_status
-            viewing_request.save()
+        serializer = self.get_serializer(viewing_request)
+        return Response(serializer.data)
 
-            serializer = self.get_serializer(viewing_request)
-            return Response(serializer.data)
+    @action(detail=True, methods=['post'], url_path='reject')
+    def reject(self, request, pk=None):
+        viewing_request = self.get_object()
+
+        if viewing_request.property.owner != request.user:
+            return Response(
+                {'error': 'Only property owner can reject requests'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if viewing_request.status != 'pending':
+            return Response(
+                {'error': f'Cannot reject request with status: {viewing_request.status}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        viewing_request.status = 'rejected'
+        viewing_request.save()
+
+        serializer = self.get_serializer(viewing_request)
+        return Response(serializer.data)
+
+    def partial_update(self, request, *args, **kwargs):
+        viewing_request = self.get_object()
+
+        if viewing_request.user != request.user:
+            return Response(
+                {'error': 'Only request creator can edit the request'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if viewing_request.status in ['approved', 'rejected']:
+            return Response(
+                {'error': 'Cannot edit approved or rejected requests'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         return super().partial_update(request, *args, **kwargs)

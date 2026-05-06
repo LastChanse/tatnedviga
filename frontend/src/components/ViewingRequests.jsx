@@ -1,22 +1,33 @@
 import { useState, useEffect } from 'react';
 import { Button, Modal, Form, DatePicker, TimePicker, message, List, Tag, Space, Popconfirm } from 'antd';
-import { EyeOutlined, EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { EyeOutlined, EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined, UserOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { requestService } from "../services/requestService.js";
 
 const ViewingRequests = ({ propertyId, isOwner }) => {
   const [requests, setRequests] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [editingId, setEditingId] = useState(null);
 
-  const fetchRequests = async (propertyId) => {
+  const fetchTotalCount = async () => {
+    if (!propertyId) return;
+
+    try {
+      const data = await requestService.getRequestsCountByProperty(propertyId);
+      setTotalCount(data.count);
+    } catch (error) {
+      console.error('Ошибка загрузки количества заявок:', error);
+    }
+  };
+
+  const fetchRequests = async () => {
+    if (!propertyId) return;
+
     try {
       setLoading(true);
-      if (!propertyId) {
-        throw new Error('Не указан ID объекта недвижимости');
-      }
       const data = await requestService.getRequestsByProperty(propertyId);
       setRequests(data);
     } catch (error) {
@@ -32,9 +43,18 @@ const ViewingRequests = ({ propertyId, isOwner }) => {
     }
   };
 
+  const loadAllData = async () => {
+    await Promise.all([
+      fetchRequests(),
+      fetchTotalCount()
+    ]);
+  };
+
   useEffect(() => {
-    fetchRequests(propertyId);
-  }, [propertyId]);
+    if (propertyId) {
+      loadAllData();
+    }
+  }, [propertyId, isOwner]);
 
   const handleSubmit = async (values) => {
     const { date, time, message: comment } = values;
@@ -44,7 +64,6 @@ const ViewingRequests = ({ propertyId, isOwner }) => {
 
     try {
       if (editingId) {
-        // Обновление существующей заявки
         await requestService.updateRequest(
           editingId,
           formattedDate,
@@ -53,7 +72,6 @@ const ViewingRequests = ({ propertyId, isOwner }) => {
         );
         message.success('Заявка успешно обновлена');
       } else {
-        // Создание новой заявки
         await requestService.createViewingRequest(
           propertyId,
           formattedDate,
@@ -63,14 +81,10 @@ const ViewingRequests = ({ propertyId, isOwner }) => {
         message.success('Заявка успешно создана');
       }
 
-      // Закрываем окно
       setModalVisible(false);
-      // Очищаем форму
       form.resetFields();
-      // Сбрасываем ID редактирования
       setEditingId(null);
-      // Обновляем список
-      await fetchRequests(propertyId);
+      await loadAllData();
 
     } catch (error) {
       console.error('Ошибка при сохранении заявки:', error);
@@ -86,7 +100,7 @@ const ViewingRequests = ({ propertyId, isOwner }) => {
     try {
       await requestService.deleteRequest(id);
       message.success('Заявка отменена');
-      await fetchRequests(propertyId);
+      await loadAllData();
     } catch (error) {
       console.error('Ошибка при отмене заявки:', error);
       message.error(
@@ -101,7 +115,7 @@ const ViewingRequests = ({ propertyId, isOwner }) => {
     try {
       await requestService.approveRequest(id);
       message.success('Заявка подтверждена');
-      await fetchRequests(propertyId);
+      await loadAllData();
     } catch (error) {
       console.error('Ошибка при подтверждении заявки:', error);
       message.error(
@@ -116,7 +130,7 @@ const ViewingRequests = ({ propertyId, isOwner }) => {
     try {
       await requestService.rejectRequest(id);
       message.success('Заявка отклонена');
-      await fetchRequests(propertyId);
+      await loadAllData();
     } catch (error) {
       console.error('Ошибка при отклонении заявки:', error);
       message.error(
@@ -159,7 +173,12 @@ const ViewingRequests = ({ propertyId, isOwner }) => {
   return (
     <div className="mt-6 ml-4 mr-4">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-extrabold text-gray-900 mb-3">Заявки на просмотр</h3>
+        <div>
+          <h3 className="text-xl font-extrabold text-gray-900 mb-2">Заявки на просмотр</h3>
+          <span className="ml-2 text-gray-500 text-sm">
+              Всего заявок на объект {totalCount}
+            </span>
+        </div>
         {!isOwner && (
           <Button
             type="primary"
@@ -183,6 +202,7 @@ const ViewingRequests = ({ propertyId, isOwner }) => {
                   type="text"
                   icon={<EditOutlined />}
                   onClick={() => handleEditRequest(request)}
+                  title="Редактировать заявку"
                 />,
                 <Popconfirm
                   key="delete"
@@ -191,19 +211,32 @@ const ViewingRequests = ({ propertyId, isOwner }) => {
                   okText="Да"
                   cancelText="Нет"
                 >
-                  <Button type="text" danger icon={<DeleteOutlined />} />
+                  <Button type="text" danger icon={<DeleteOutlined />} title="Отменить заявку" />
                 </Popconfirm>
               ] : []
             }
           >
             <List.Item.Meta
               title={
-                <Space>
-                  {dayjs(request.requested_date).format('DD.MM.YYYY')} в {request.requested_time}
-                  {getStatusTag(request.status)}
+                <Space direction="vertical" size="small">
+                  <Space>
+                    {dayjs(request.requested_date).format('DD.MM.YYYY')} в {request.requested_time}
+                    {getStatusTag(request.status)}
+                  </Space>
+                  {isOwner && request.user_name && (
+                    <Space size="small" style={{ fontSize: '12px', color: '#666' }}>
+                      <UserOutlined /> <span>Заявитель: {request.user_name}</span>
+                    </Space>
+                  )}
                 </Space>
               }
-              description={request.message || 'Без комментария'}
+              description={
+                request.message && (
+                  <div className="mt-2 text-gray-600">
+                    <strong>Комментарий:</strong> {request.message}
+                  </div>
+                )
+              }
             />
             {isOwner && request.status === 'pending' && (
               <Space>
@@ -227,7 +260,7 @@ const ViewingRequests = ({ propertyId, isOwner }) => {
             )}
           </List.Item>
         )}
-        locale={{ emptyText: 'Нет заявок на просмотр' }}
+        locale={{ emptyText: 'Нет видимых заявок на просмотр' }}
       />
 
       <Modal

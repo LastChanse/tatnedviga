@@ -12,6 +12,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from rest_framework import filters
+from django_filters.rest_framework import DjangoFilterBackend
+
 User = get_user_model()
 
 class CreateUserView(generics.CreateAPIView):
@@ -82,6 +85,47 @@ class ViewingRequestViewSet(viewsets.ModelViewSet):
     queryset = ViewingRequest.objects.all()
     serializer_class = ViewingRequestSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['property', 'status']
+    ordering_fields = ['created_at', 'requested_date', 'requested_time']
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = ViewingRequest.objects.all()
+
+        # Получаем параметр property из запроса (если есть)
+        property_id = self.request.query_params.get('property')
+
+        if user.role == 'owner':
+            # Если указан конкретный объект, показываем заявки только на него
+            if property_id:
+                return queryset.filter(property_id=property_id, property__owner=user)
+            else:
+                # Иначе показываем все заявки на объекты владельца
+                return queryset.filter(property__owner=user)
+        else:
+            # Для обычных пользователей
+            if property_id:
+                # Если указан объект, показываем только свои заявки на этот объект
+                return queryset.filter(property_id=property_id, user=user)
+            else:
+                # Иначе показываем все свои заявки
+                return queryset.filter(user=user)
+
+    @action(detail=False, methods=['get'], url_path='count')
+    def get_count(self, request):
+        property_id = request.query_params.get('property')
+
+        if not property_id:
+            return Response(
+                {'error': 'Property ID is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Считаем ВСЕ заявки на объект (без фильтрации по пользователю)
+        count = ViewingRequest.objects.filter(property_id=property_id).count()
+
+        return Response({'count': count})
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -100,19 +144,47 @@ class ViewingRequestViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+    def partial_update(self, request, *args, **kwargs):
+        viewing_request = self.get_object()
+
+        if viewing_request.user != request.user:
+            return Response(
+                {'error': 'Вы можете редактировать только свои заявки'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if viewing_request.status in ['approved', 'rejected']:
+            return Response(
+                {'error': 'Нельзя редактировать подтвержденные или отклоненные заявки'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        viewing_request = self.get_object()
+
+        if viewing_request.user != request.user:
+            return Response(
+                {'error': 'Вы можете удалять только свои заявки'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        return super().destroy(request, *args, **kwargs)
+
     @action(detail=True, methods=['post'], url_path='approve')
     def approve(self, request, pk=None):
         viewing_request = self.get_object()
 
         if viewing_request.property.owner != request.user:
             return Response(
-                {'error': 'Only property owner can approve requests'},
+                {'error': 'Только владелец объекта может подтверждать заявки'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
         if viewing_request.status != 'pending':
             return Response(
-                {'error': f'Cannot approve request with status: {viewing_request.status}'},
+                {'error': f'Нельзя подтвердить заявку со статусом: {viewing_request.status}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -128,13 +200,13 @@ class ViewingRequestViewSet(viewsets.ModelViewSet):
 
         if viewing_request.property.owner != request.user:
             return Response(
-                {'error': 'Only property owner can reject requests'},
+                {'error': 'Только владелец объекта может отклонять заявки'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
         if viewing_request.status != 'pending':
             return Response(
-                {'error': f'Cannot reject request with status: {viewing_request.status}'},
+                {'error': f'Нельзя отклонить заявку со статусом: {viewing_request.status}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -143,20 +215,3 @@ class ViewingRequestViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(viewing_request)
         return Response(serializer.data)
-
-    def partial_update(self, request, *args, **kwargs):
-        viewing_request = self.get_object()
-
-        if viewing_request.user != request.user:
-            return Response(
-                {'error': 'Only request creator can edit the request'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        if viewing_request.status in ['approved', 'rejected']:
-            return Response(
-                {'error': 'Cannot edit approved or rejected requests'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        return super().partial_update(request, *args, **kwargs)

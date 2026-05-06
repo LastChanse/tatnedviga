@@ -81,7 +81,6 @@ class FavoriteSerializer(serializers.ModelSerializer):
         fields = ['id', 'property', 'created_at']
 
 
-# serializers.py
 class ViewingRequestSerializer(serializers.ModelSerializer):
     property = serializers.PrimaryKeyRelatedField(
         queryset=Property.objects.all(),
@@ -99,11 +98,15 @@ class ViewingRequestSerializer(serializers.ModelSerializer):
             'invalid': 'Enter a valid time in HH:MM format'
         }
     )
+    user_name = serializers.CharField(source='user.username', read_only=True)
 
     class Meta:
         model = ViewingRequest
-        fields = ['id', 'property', 'requested_date', 'requested_time', 'message', 'status', 'created_at', 'updated_at']
-        read_only_fields = ['status', 'created_at', 'updated_at']  # Remove 'user' from read_only_fields
+        fields = [
+            'id', 'property', 'requested_date', 'requested_time',
+            'message', 'status', 'created_at', 'updated_at', 'user', 'user_name'
+        ]
+        read_only_fields = ['status', 'created_at', 'updated_at', 'user']
 
     def create(self, validated_data):
         user = self.context['request'].user

@@ -8,6 +8,7 @@ import NotFound from "./pages/NotFound"
 import ProtectedRoute from "./components/ProtectedRoute"
 import Profile from "./pages/Profile.jsx"
 import CreateProperty from "./pages/CreateProperty.jsx"
+import PropertyFormPage from "./pages/PropertyFormPage.jsx"
 import OwnerProperties from "./pages/OwnerProperties.jsx"
 import PropertyDetail from "./pages/PropertyDetail.jsx"
 import Favorites from './pages/Favorites';
@@ -59,6 +60,14 @@ function App() {
           element={
             <OwnerOnlyRoute>
               <CreateProperty />
+            </OwnerOnlyRoute>
+          }
+        />
+        <Route
+          path="/property/:id/edit"
+          element={
+            <OwnerOnlyRoute>
+              <PropertyFormPage mode="edit" />
             </OwnerOnlyRoute>
           }
         />

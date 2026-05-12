@@ -101,5 +101,20 @@ export const requestService = {
       }
     );
     return response.data;
+  },
+
+  completeRequest: async (requestId) => {
+    const token = localStorage.getItem('access');
+    const response = await axios.post(
+      `${API_URL}/viewing-requests/${requestId}/complete/`,
+      {},
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    return response.data;
   }
 };

@@ -189,18 +189,29 @@ class ViewingRequestViewSet(viewsets.ModelViewSet):
 
     def partial_update(self, request, *args, **kwargs):
         viewing_request = self.get_object()
+        is_request_author = viewing_request.user == request.user
+        is_property_owner = viewing_request.property.owner == request.user
 
-        if viewing_request.user != request.user:
+        if not is_request_author and not is_property_owner:
             return Response(
-                {'error': 'Вы можете редактировать только свои заявки'},
+                {'error': 'Вы можете редактировать только свои заявки или заявки на свои объекты'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        if viewing_request.status in ['approved', 'rejected', 'completed']:
+        if viewing_request.status in [ViewingRequest.REJECTED, ViewingRequest.COMPLETED]:
             return Response(
-                {'error': 'Нельзя редактировать подтвержденные, отклоненные или завершенные заявки'},
+                {'error': 'Нельзя редактировать отклоненные или завершенные заявки'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        if is_property_owner and not is_request_author:
+            allowed_fields = {'requested_date', 'requested_time', 'message'}
+            forbidden_fields = set(request.data.keys()) - allowed_fields
+            if forbidden_fields:
+                return Response(
+                    {'error': 'Собственник может переносить только дату, время и комментарий'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
         return super().partial_update(request, *args, **kwargs)
 

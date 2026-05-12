@@ -78,6 +78,11 @@ export default function OwnerProperties() {
       render: (title, record) => <Link to={`/property/${record.id}`}>{title}</Link>,
     },
     {
+      title: 'Район / площадь',
+      key: 'district_area',
+      render: (_, record) => `${record.district || 'Район не указан'} · ${record.area ? `${record.area} м²` : 'площадь не указана'}`,
+    },
+    {
       title: 'Статус',
       dataIndex: 'status',
       key: 'status',
@@ -111,6 +116,9 @@ export default function OwnerProperties() {
       key: 'actions',
       render: (_, record) => (
         <div className="flex flex-wrap gap-2">
+          <Link to={`/property/${record.id}/edit`}>
+            <Button>Редактировать</Button>
+          </Link>
           <Button onClick={() => handleAvailabilityChange(record)}>
             {record.is_active ? 'Деактивировать' : 'Активировать'}
           </Button>
@@ -131,7 +139,12 @@ export default function OwnerProperties() {
     <div className="min-h-screen bg-gray-50">
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <Link to="/" className="font-extrabold text-gray-900">Недвижимость</Link>
+          <div className="flex items-center gap-3">
+            <Link to="/" className="font-extrabold text-gray-900">Недвижимость</Link>
+            <Link to="/profile" className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100">
+              Профиль
+            </Link>
+          </div>
           <Link to="/create-property" className="rounded-xl bg-gray-900 px-3 py-2 text-sm font-extrabold text-white">
             + Добавить объект
           </Link>
@@ -142,7 +155,7 @@ export default function OwnerProperties() {
         <div className="mb-5">
           <h1 className="text-2xl font-extrabold text-gray-900">Мои объявления</h1>
           <p className="mt-1 text-sm text-gray-600">
-            Управляйте статусом, доступностью и удалением опубликованных объектов.
+            Управляйте редактированием, статусом, доступностью и удалением опубликованных объектов.
           </p>
         </div>
 

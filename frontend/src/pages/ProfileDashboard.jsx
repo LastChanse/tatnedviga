@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button, Card, Col, Form, Input, List, Row, Space, Statistic, Tag, message } from "antd";
-import { ArrowLeftOutlined, HeartOutlined, HomeOutlined, LogoutOutlined, SaveOutlined, UserOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined, FileTextOutlined, HomeOutlined, LogoutOutlined, SaveOutlined, UserOutlined } from "@ant-design/icons";
 import api from "../api";
 import { favoriteService } from "../services/favoriteService";
 import { requestService } from "../services/requestService";
@@ -37,14 +37,16 @@ export default function ProfileDashboard() {
         setProfile(profileResponse.data);
         form.setFieldsValue(profileResponse.data);
 
-        const favoriteResult = await favoriteService.getFavorites().catch(() => []);
         const requestResult = await requestService.getRequests().catch(() => []);
-        setFavorites(favoriteResult);
         setRequests(requestResult);
 
         if ((profileResponse.data.role || localStorage.getItem("role")) === "owner") {
           const ownerProperties = await propertyService.getOwnerProperties().catch(() => []);
           setProperties(ownerProperties);
+          setFavorites([]);
+        } else {
+          const favoriteResult = await favoriteService.getFavorites().catch(() => []);
+          setFavorites(favoriteResult);
         }
       } catch (error) {
         console.error(error);
@@ -98,6 +100,11 @@ export default function ProfileDashboard() {
                 Мои объявления
               </Link>
             )}
+            {!isOwner && (
+              <Link to="/favorites" className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100">
+                Избранное
+              </Link>
+            )}
             <Button danger icon={<LogoutOutlined />} onClick={logout}>Выйти</Button>
           </Space>
         </div>
@@ -112,11 +119,11 @@ export default function ProfileDashboard() {
                 <Tag color={isOwner ? "green" : "blue"}>{isOwner ? "Собственник" : "Клиент"}</Tag>
               </div>
               <h1 className="text-3xl font-extrabold text-gray-900">{profile?.first_name || profile?.username}</h1>
-              <p className="mt-2 text-gray-600">Профиль, заявки, избранное и управление объектами.</p>
+              <p className="mt-2 text-gray-600">{isOwner ? "Кабинет собственника: объявления, заявки и статистика." : "Кабинет клиента: избранное, заявки и статусы просмотров."}</p>
             </div>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-              <Card size="small"><Statistic title="Избранное" value={favorites.length} prefix={<HeartOutlined />} /></Card>
-              <Card size="small"><Statistic title="Заявки" value={requests.length} /></Card>
+              {!isOwner && <Card size="small"><Statistic title="Избранное" value={favorites.length} /></Card>}
+              <Card size="small"><Statistic title={isOwner ? "Входящие заявки" : "Мои заявки"} value={requests.length} prefix={<FileTextOutlined />} /></Card>
               {isOwner && <Card size="small"><Statistic title="Просмотры" value={viewsCount} prefix={<HomeOutlined />} /></Card>}
             </div>
           </div>
@@ -147,20 +154,22 @@ export default function ProfileDashboard() {
             <Space direction="vertical" size="middle" style={{ width: "100%" }}>
               {isOwner && <OwnerIncomingRequests />}
 
-              <Card title="Статус текущих взаимодействий" className="rounded-2xl border-gray-200">
-                <List
-                  dataSource={activeRequests}
-                  locale={{ emptyText: "Нет активных взаимодействий" }}
-                  renderItem={(item) => (
-                    <List.Item>
-                      <List.Item.Meta
-                        title={`Заявка #${item.id} · ${requestStatus[item.status] || item.status}`}
-                        description={`${item.requested_date} в ${item.requested_time}`}
-                      />
-                    </List.Item>
-                  )}
-                />
-              </Card>
+              {!isOwner && (
+                <Card title="Статус текущих взаимодействий" className="rounded-2xl border-gray-200">
+                  <List
+                    dataSource={activeRequests}
+                    locale={{ emptyText: "Нет активных взаимодействий" }}
+                    renderItem={(item) => (
+                      <List.Item>
+                        <List.Item.Meta
+                          title={`Заявка #${item.id} · ${requestStatus[item.status] || item.status}`}
+                          description={`${item.requested_date} в ${item.requested_time}`}
+                        />
+                      </List.Item>
+                    )}
+                  />
+                </Card>
+              )}
 
               <Card title={isOwner ? "Опубликованные объекты" : "Избранные объекты"} className="rounded-2xl border-gray-200">
                 <List
@@ -180,20 +189,22 @@ export default function ProfileDashboard() {
                 />
               </Card>
 
-              <Card title="История заявок на просмотр" className="rounded-2xl border-gray-200">
-                <List
-                  dataSource={requests}
-                  locale={{ emptyText: "Заявок пока нет" }}
-                  renderItem={(item) => (
-                    <List.Item>
-                      <List.Item.Meta
-                        title={`Заявка #${item.id}`}
-                        description={`${item.requested_date} в ${item.requested_time} · ${requestStatus[item.status] || item.status}`}
-                      />
-                    </List.Item>
-                  )}
-                />
-              </Card>
+              {!isOwner && (
+                <Card title="История заявок на просмотр" className="rounded-2xl border-gray-200">
+                  <List
+                    dataSource={requests}
+                    locale={{ emptyText: "Заявок пока нет" }}
+                    renderItem={(item) => (
+                      <List.Item>
+                        <List.Item.Meta
+                          title={`Заявка #${item.id}`}
+                          description={`${item.requested_date} в ${item.requested_time} · ${requestStatus[item.status] || item.status}`}
+                        />
+                      </List.Item>
+                    )}
+                  />
+                </Card>
+              )}
             </Space>
           </Col>
         </Row>

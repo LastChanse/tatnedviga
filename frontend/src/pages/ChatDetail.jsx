@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
-import { Button, Input, Spin, message } from 'antd';
-import { SendOutlined } from '@ant-design/icons';
+import { Button, Input, Modal, Spin, Tag, message } from 'antd';
+import { InfoCircleOutlined, SendOutlined } from '@ant-design/icons';
 import { chatService } from '../services/chatService';
 
 const formatMessageTime = (value) => {
@@ -30,27 +30,34 @@ const formatMessageDate = (value) => {
 
 export default function ChatDetail() {
   const { id } = useParams();
+  const [conversation, setConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
   const isAuthed = Boolean(localStorage.getItem('access'));
+  const role = localStorage.getItem('role');
 
-  const loadMessages = async () => {
+  const loadChat = async () => {
     try {
       setLoading(true);
-      const data = await chatService.getMessages(id);
-      setMessages(data);
+      const [conversationData, messagesData] = await Promise.all([
+        chatService.getConversation(id),
+        chatService.getMessages(id),
+      ]);
+      setConversation(conversationData);
+      setMessages(messagesData);
     } catch (error) {
       console.error(error);
-      message.error('Не удалось загрузить сообщения');
+      message.error('Не удалось загрузить чат');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (isAuthed && id) loadMessages();
+    if (isAuthed && id) loadChat();
   }, [id, isAuthed]);
 
   const send = async () => {
@@ -72,6 +79,9 @@ export default function ChatDetail() {
 
   if (!isAuthed) return <Navigate to="/login" />;
 
+  const companionName = role === 'owner' ? conversation?.client_name : conversation?.owner_name;
+  const companionRole = role === 'owner' ? 'Клиент' : 'Собственник';
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
       <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/80 backdrop-blur">
@@ -85,8 +95,31 @@ export default function ChatDetail() {
 
       <main className="mx-auto flex min-h-[calc(100vh-64px)] max-w-4xl flex-col px-4 py-6">
         <div className="mb-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <h1 className="text-xl font-extrabold text-gray-900">Диалог</h1>
-          <p className="mt-1 text-sm text-gray-600">Сообщения между клиентом и собственником по объекту.</p>
+          {loading ? (
+            <div className="h-16 animate-pulse rounded-xl bg-gray-100" />
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <img
+                  src={conversation?.property_image || 'https://via.placeholder.com/96x72?text=Нет+фото'}
+                  alt={conversation?.property_title || 'Объект'}
+                  className="h-14 w-16 rounded-xl object-cover"
+                />
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h1 className="text-xl font-extrabold text-gray-900">{companionName || 'Собеседник'}</h1>
+                    <Tag>{companionRole}</Tag>
+                  </div>
+                  <Link to={`/property/${conversation?.property}`} className="mt-1 block text-sm font-semibold text-gray-600 hover:text-gray-900">
+                    {conversation?.property_title || 'Объект недвижимости'}
+                  </Link>
+                </div>
+              </div>
+              <Button icon={<InfoCircleOutlined />} onClick={() => setInfoOpen(true)}>
+                Инфо
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="flex-1 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -111,7 +144,6 @@ export default function ChatDetail() {
                     )}
                     <div className={msg.is_mine ? 'flex justify-end' : 'flex justify-start'}>
                       <div className={msg.is_mine ? 'max-w-[75%] rounded-2xl bg-gray-900 px-4 py-2 text-white shadow-sm' : 'max-w-[75%] rounded-2xl bg-gray-100 px-4 py-2 text-gray-900 shadow-sm'}>
-                        <div className={msg.is_mine ? 'mb-1 text-xs font-bold text-gray-300' : 'mb-1 text-xs font-bold text-gray-500'}>{msg.sender_name}</div>
                         <div className="whitespace-pre-wrap text-sm leading-relaxed">{msg.text}</div>
                         <div className={msg.is_mine ? 'mt-1 text-right text-[11px] font-medium text-gray-300' : 'mt-1 text-right text-[11px] font-medium text-gray-500'}>
                           {formatMessageTime(msg.created_at)}
@@ -145,6 +177,31 @@ export default function ChatDetail() {
           </div>
         </div>
       </main>
+
+      <Modal title="Информация о диалоге" open={infoOpen} onCancel={() => setInfoOpen(false)} footer={null}>
+        <div className="space-y-3 text-sm text-gray-700">
+          <div>
+            <div className="text-xs font-bold uppercase text-gray-500">Собеседник</div>
+            <div className="text-base font-extrabold text-gray-900">{companionName || 'Не указан'}</div>
+            <div>{companionRole}</div>
+          </div>
+          <div>
+            <div className="text-xs font-bold uppercase text-gray-500">Объект</div>
+            <Link to={`/property/${conversation?.property}`} className="font-bold text-gray-900 hover:underline">
+              {conversation?.property_title || 'Открыть объект'}
+            </Link>
+          </div>
+          <div>
+            <div className="text-xs font-bold uppercase text-gray-500">Участники</div>
+            <div>Клиент: {conversation?.client_name || '—'}</div>
+            <div>Собственник: {conversation?.owner_name || '—'}</div>
+          </div>
+          <div>
+            <div className="text-xs font-bold uppercase text-gray-500">Создан</div>
+            <div>{conversation?.created_at ? new Date(conversation.created_at).toLocaleString('ru-RU') : '—'}</div>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

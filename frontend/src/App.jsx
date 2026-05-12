@@ -8,6 +8,7 @@ import NotFound from "./pages/NotFound"
 import ProtectedRoute from "./components/ProtectedRoute"
 import Profile from "./pages/Profile.jsx"
 import CreateProperty from "./pages/CreateProperty.jsx"
+import OwnerProperties from "./pages/OwnerProperties.jsx"
 import PropertyDetail from "./pages/PropertyDetail.jsx"
 import Favorites from './pages/Favorites';
 import MapView from './pages/MapView';
@@ -15,6 +16,14 @@ import MapView from './pages/MapView';
 function Logout() {
   localStorage.clear()
   return <Navigate to="/login" />
+}
+
+function OwnerOnlyRoute({ children }) {
+  return localStorage.getItem("role") === "owner" ? (
+    <ProtectedRoute>{children}</ProtectedRoute>
+  ) : (
+    <Navigate to="/" />
+  )
 }
 
 function App() {
@@ -45,20 +54,24 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:uidb64/:token/" element={<ResetPassword />} />
         <Route path="/logout" element={<Logout />} />
-        <Route 
-          path="/create-property" 
+        <Route
+          path="/create-property"
           element={
-            localStorage.getItem("role") === "owner" ? (
-              <ProtectedRoute>
-                <CreateProperty />
-              </ProtectedRoute>
-            ) : (
-              <Navigate to="/" />
-            )
-          } 
+            <OwnerOnlyRoute>
+              <CreateProperty />
+            </OwnerOnlyRoute>
+          }
         />
-        <Route path="*" element={<NotFound />} />
+        <Route
+          path="/owner/properties"
+          element={
+            <OwnerOnlyRoute>
+              <OwnerProperties />
+            </OwnerOnlyRoute>
+          }
+        />
         <Route path="/map" element={<MapView />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   )

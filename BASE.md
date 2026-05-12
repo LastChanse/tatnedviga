@@ -1,5 +1,83 @@
 # База знаний проекта (Wiki)
 
+# 🚀 Быстрый запуск проекта
+
+## Docker запуск
+
+### Первый запуск
+
+```bash
+docker compose up --build
+```
+
+### Остановка
+
+```bash
+docker compose down
+```
+
+### Остановка с удалением данных
+
+```bash
+docker compose down -v
+```
+
+### Перезапуск backend
+
+```bash
+docker compose restart backend
+```
+
+### Зайти в контейнер backend
+
+```bash
+docker exec -it tatnedviga-backend bash
+```
+
+### Применить миграции вручную
+
+```bash
+docker exec -it tatnedviga-backend python manage.py migrate
+```
+
+---
+
+## Локальный запуск без Docker
+
+### Backend
+
+```bash
+cd backend
+python manage.py migrate
+python manage.py runserver
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Тестовые данные
+
+```bash
+cd backend
+python manage.py create_test_properties
+```
+
+---
+
+## Порты
+
+| Сервис | Внутренний порт | Внешний порт | URL |
+| --- | --- | --- | --- |
+| Backend (Django) | 8000 | 8000 | http://localhost:8000 |
+| Frontend (Vite) | 5173 | 5173 | http://localhost:5173 |
+
+---
+
 # 🔐 Аутентификация (по коммитам)
 
 ## Реализовано:
@@ -276,7 +354,7 @@ class CustomUser(AbstractUser):
     )
 
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
-````
+```
 
 ### Поля:
 
@@ -521,65 +599,6 @@ Authorization: Bearer <token>
 
 Аутентификация → роли → профиль
 
-# 🐳 Docker (контейнеризация)
-
-## Реализовано:
-
-- полная контейнеризация фронтенда и бэкенда
-- запуск всего проекта одной командой
-- автоматическое применение миграций при старте
-- горячая перезагрузка кода при разработке
-- общие переменные окружения через `.env`
-
----
-
-## 🔹 Структура
-
-tatnedviga/
-├── backend/
-│ ├── Dockerfile
-│ └── entrypoint.sh
-├── frontend/
-│ └── Dockerfile
-└── docker-compose.yml
-
-🔹 Основные команды
-Первый запуск
-``bash
-docker compose up --build
-```
-
-Остановка
-```bash
-docker compose down
-```
-
-Остановка с удалением данных
-```bash
-docker compose down -v
-```
-
-Перезапуск бэкенда
-```bash
-docker compose restart backend
-```
-
-Зайти в контейнер бэкенда
-```bash
-docker exec -it tatnedviga-backend bash
-```
-
-Применить миграции вручную (если нужно)
-```bash
-docker exec -it tatnedviga-backend python manage.py migrate
-```
-
-🔹 Порты
-Сервис | Внутренний | порт |	Внешний порт |	URL
-| --- | --- | --- | --- | --- |
-Бэкенд | (Django)	| 8000  |	8000 |	http://localhost:8000
-Фронтенд | (Vite)	| 5173 |	5173 |	http://localhost:5173
-
 # 📅 Заявки на просмотр (Viewing Requests) - API Документация
 
 ## 🔹 Базовый URL
@@ -659,76 +678,108 @@ Response (201 Created):
   "updated_at": "2026-04-29T09:00:00Z"
 }
 ```
-🔹 Форматы данных
-Дата
+## 🔹 Форматы данных
 
-    Формат: YYYY-MM-DD
+| Значение | Формат | Пример |
+| --- | --- | --- |
+| Дата | `YYYY-MM-DD` | `2026-04-30` |
+| Время | `HH:MM` | `14:30` |
+| Дата и время | ISO 8601 | `2026-04-29T09:00:00Z` |
 
-    Пример: 2026-04-30
+---
 
-Время
+## 🔹 Права доступа
 
-    Формат: HH:MM
+| Действие | Клиент | Собственник | Админ |
+| --- | --- | --- | --- |
+| Просмотр своих заявок | ✅ | ✅ | ✅ |
+| Просмотр заявок на свои объекты | ❌ | ✅ | ✅ |
+| Создание заявки на просмотр | ✅ | ❌ | ✅ |
+| Редактирование своей заявки | ✅ | ❌ | ✅ |
+| Перенос даты входящей заявки | ❌ | ✅ | ✅ |
+| Подтверждение заявки | ❌ | ✅ | ✅ |
+| Отклонение заявки | ❌ | ✅ | ✅ |
+| Завершение сделки | ❌ | ✅ | ✅ |
+| Удаление своей заявки | ✅ | ❌ | ✅ |
+| Удаление входящей заявки | ❌ | ✅ | ✅ |
 
-    Пример: 14:30
+\* Только если заявка ещё не отклонена и не завершена.  
+\** Только для заявок на объекты этого собственника.
 
-Дата и время (автоматически)
+---
 
-    Формат: ISO 8601
+## 🔹 Статусы заявок
 
-    Пример: 2026-04-29T09:00:00Z
-🔹 Права доступа
-Действие	Клиент	Собственник	Админ
-Просмотр своих заявок	✅	✅	✅
-Просмотр заявок на свои объекты	❌	✅	✅
-Создание заявки	✅	✅	✅
-Редактирование своей заявки	✅*	✅	✅
-Изменение статуса заявки	❌	✅**	✅
-Удаление своей заявки	✅*	✅	✅
-Удаление любой заявки	❌	❌	✅
+| Статус | Описание |
+| --- | --- |
+| `pending` | На рассмотрении |
+| `approved` | Подтверждена |
+| `rejected` | Отклонена |
+| `completed` | Завершена |
 
-🔹 Коды ошибок
-Статус	Описание
-200	OK - успешный запрос
-201	Created - заявка создана
-204	No Content - успешное удаление
-400	Bad Request - неверный формат данных
-401	Unauthorized - требуется аутентификация
-403	Forbidden - недостаточно прав
-404	Not Found - заявка не найдена
-500	Internal Server Error - ошибка сервера
-Пример ошибки 400
-json
+---
 
+## 🔹 Логика изменения объекта при заявках
+
+| Действие собственника | Что происходит |
+| --- | --- |
+| Подтверждение заявки | объект получает статус `booked` |
+| Завершение сделки по аренде | объект получает статус `rented` и `is_active = false` |
+| Завершение сделки по продаже | объект получает статус `sold` и `is_active = false` |
+
+---
+
+## 🔹 Коды ошибок
+
+| Статус | Описание |
+| --- | --- |
+| `200` | OK — успешный запрос |
+| `201` | Created — заявка создана |
+| `204` | No Content — успешное удаление |
+| `400` | Bad Request — неверный формат данных |
+| `401` | Unauthorized — требуется аутентификация |
+| `403` | Forbidden — недостаточно прав |
+| `404` | Not Found — заявка не найдена |
+| `500` | Internal Server Error — ошибка сервера |
+
+### Пример ошибки 400
+
+```json
 {
   "requested_date": ["Enter a valid date in YYYY-MM-DD format"],
   "requested_time": ["Enter a valid time in HH:MM format"]
 }
+```
 
-Пример ошибки 401
-json
+### Пример ошибки 401
 
+```json
 {
   "detail": "Authentication credentials were not provided."
 }
+```
 
-Пример ошибки 403
-json
+### Пример ошибки 403
 
+```json
 {
   "detail": "You do not have permission to perform this action."
 }
+```
 
-Пример ошибки 404
-json
+### Пример ошибки 404
 
+```json
 {
   "detail": "Not found."
 }
+```
 
-🔹 Frontend пример (JavaScript)
-javascript
+---
 
+## 🔹 Frontend пример (JavaScript)
+
+```js
 // Создание заявки
 const response = await axios.post(
   `${API_URL}/viewing-requests/`,
@@ -740,37 +791,82 @@ const response = await axios.post(
   },
   {
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
     }
   }
 );
 
 // Получение заявок по объекту
-const response = await axios.get(
+const requests = await axios.get(
   `${API_URL}/viewing-requests/?property=${propertyId}`,
   {
-    headers: { 'Authorization': `Bearer ${token}` }
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
   }
 );
 
-// Обновление статуса
-const response = await axios.patch(
+// Перенос даты / времени заявки
+const updated = await axios.patch(
   `${API_URL}/viewing-requests/${requestId}/`,
-  { status: "approved" },
   {
-    headers: { 'Authorization': `Bearer ${token}` }
+    requested_date: "2026-05-01",
+    requested_time: "16:00",
+    message: "Перенос просмотра"
+  },
+  {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
   }
 );
 
-// Удаление заявки
+// Подтверждение заявки собственником
+const approved = await axios.post(
+  `${API_URL}/viewing-requests/${requestId}/approve/`,
+  {},
+  {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }
+);
+
+// Отклонение заявки собственником
+const rejected = await axios.post(
+  `${API_URL}/viewing-requests/${requestId}/reject/`,
+  {},
+  {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }
+);
+
+// Завершение сделки собственником
+const completed = await axios.post(
+  `${API_URL}/viewing-requests/${requestId}/complete/`,
+  {},
+  {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }
+);
+
+// Удаление / отмена заявки
 await axios.delete(
   `${API_URL}/viewing-requests/${requestId}/`,
   {
-    headers: { 'Authorization': `Bearer ${token}` }
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
   }
 );
+```
 
+---
 
 # 🗺️ Яндекс.Карты и геокодинг
 

@@ -6,6 +6,7 @@ import api from "../api";
 import { favoriteService } from "../services/favoriteService";
 import { requestService } from "../services/requestService";
 import { propertyService } from "../services/propertyService";
+import OwnerIncomingRequests from "../components/OwnerIncomingRequests.jsx";
 
 const requestStatus = {
   pending: "На рассмотрении",
@@ -144,6 +145,8 @@ export default function ProfileDashboard() {
 
           <Col xs={24} lg={14}>
             <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+              {isOwner && <OwnerIncomingRequests />}
+
               <Card title="Статус текущих взаимодействий" className="rounded-2xl border-gray-200">
                 <List
                   dataSource={activeRequests}

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { HeartOutlined, HeartFilled } from '@ant-design/icons';
 import { favoriteService } from '../services/favoriteService';
@@ -21,18 +21,32 @@ export default function HomePage() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [favorites, setFavorites] = useState(new Set());
   const [listings, setListings] = useState([]);
+  const requestIdRef = useRef(0);
 
   const role = localStorage.getItem("role");
   const isOwner = role === "owner";
   const isClient = role === "client";
   const isAuthed = Boolean(localStorage.getItem("access") || localStorage.getItem("token"));
 
+  const loadListings = async (onlyAvailable = showOnlyAvailable) => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    const params = onlyAvailable ? {} : { include_inactive: "true" };
+
+    try {
+      const res = await axios.get("http://localhost:8000/api/properties/", { params });
+      if (requestIdRef.current === requestId) {
+        setListings(res.data);
+      }
+    } catch (err) {
+      if (requestIdRef.current === requestId) {
+        console.error(err);
+      }
+    }
+  };
+
   useEffect(() => {
-    const params = showOnlyAvailable ? {} : { include_inactive: "true" };
-    axios
-      .get("http://localhost:8000/api/properties/", { params })
-      .then((res) => setListings(res.data))
-      .catch((err) => console.error(err));
+    loadListings(showOnlyAvailable);
   }, [showOnlyAvailable]);
 
   useEffect(() => {
@@ -118,6 +132,7 @@ export default function HomePage() {
     setPriceMax("");
     setQuery("");
     setShowOnlyAvailable(true);
+    loadListings(true);
   };
 
   return (

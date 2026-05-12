@@ -36,6 +36,7 @@ class Property(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     price = models.IntegerField()
+    area = models.PositiveIntegerField(null=True, blank=True, verbose_name='Площадь')
     deal = models.CharField(max_length=10, choices=DEAL_CHOICES)
     property_type = models.CharField(max_length=20, choices=TYPE_CHOICES)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="available")
@@ -44,6 +45,7 @@ class Property(models.Model):
     image = models.ImageField(upload_to='properties/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     address = models.CharField(max_length=500, blank=True, verbose_name='Полный адрес')
+    district = models.CharField(max_length=255, blank=True, verbose_name='Район')
     latitude = models.FloatField(null=True, blank=True, verbose_name='Широта')
     longitude = models.FloatField(null=True, blank=True, verbose_name='Долгота')
 

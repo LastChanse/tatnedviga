@@ -130,6 +130,12 @@ class FavoriteViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def toggle(self, request):
+        if request.user.role == 'owner':
+            return Response(
+                {'error': 'Собственник не добавляет объекты в избранное'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         property_id = request.data.get('property_id')
         favorite = Favorite.objects.filter(user=request.user, property_id=property_id).first()
         if favorite:
@@ -180,6 +186,12 @@ class ViewingRequestViewSet(viewsets.ModelViewSet):
         return context
 
     def create(self, request, *args, **kwargs):
+        property_obj = get_object_or_404(Property, pk=request.data.get('property'))
+        if request.user.role == 'owner':
+            return Response({'error': 'Собственник не записывается на просмотр'}, status=status.HTTP_400_BAD_REQUEST)
+        if not property_obj.is_active or property_obj.status != 'available':
+            return Response({'error': 'Объект сейчас недоступен для просмотра'}, status=status.HTTP_400_BAD_REQUEST)
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -228,7 +240,12 @@ class ViewingRequestViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='approve')
     def approve(self, request, pk=None):
-        return self._set_owner_status(request, ViewingRequest.APPROVED, 'подтверждать')
+        response = self._set_owner_status(request, ViewingRequest.APPROVED, 'подтверждать')
+        if response.status_code == status.HTTP_200_OK:
+            viewing_request = self.get_object()
+            viewing_request.property.status = 'booked'
+            viewing_request.property.save(update_fields=['status'])
+        return response
 
     @action(detail=True, methods=['post'], url_path='reject')
     def reject(self, request, pk=None):
@@ -236,7 +253,14 @@ class ViewingRequestViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='complete')
     def complete(self, request, pk=None):
-        return self._set_owner_status(request, ViewingRequest.COMPLETED, 'завершать')
+        response = self._set_owner_status(request, ViewingRequest.COMPLETED, 'завершать')
+        if response.status_code == status.HTTP_200_OK:
+            viewing_request = self.get_object()
+            property_obj = viewing_request.property
+            property_obj.status = 'rented' if property_obj.deal == 'rent' else 'sold'
+            property_obj.is_active = False
+            property_obj.save(update_fields=['status', 'is_active'])
+        return response
 
     def _set_owner_status(self, request, new_status, action_label):
         viewing_request = self.get_object()

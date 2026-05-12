@@ -13,6 +13,8 @@ import OwnerProperties from "./pages/OwnerProperties.jsx"
 import PropertyDetail from "./pages/PropertyDetail.jsx"
 import Favorites from './pages/Favorites';
 import MapView from './pages/MapView';
+import Chats from './pages/Chats.jsx';
+import ChatDetail from './pages/ChatDetail.jsx';
 
 function Logout() {
   localStorage.clear()
@@ -49,6 +51,8 @@ function App() {
           }
         />
         <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
+        <Route path="/chats" element={<ProtectedRoute><Chats /></ProtectedRoute>} />
+        <Route path="/chats/:id" element={<ProtectedRoute><ChatDetail /></ProtectedRoute>} />
         <Route path="/property/:id" element={<PropertyDetail />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

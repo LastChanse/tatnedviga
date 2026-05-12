@@ -1,12 +1,8 @@
-from django.contrib.auth.models import User
-from django.utils import timezone
 from rest_framework import serializers
 
 from django.contrib.auth import get_user_model
 
-from api.models import Favorite, Property
-
-from api.models import ViewingRequest
+from api.models import Favorite, Property, Review, ViewingRequest
 
 User = get_user_model()
 
@@ -23,6 +19,7 @@ class UserSerializer(serializers.ModelSerializer):
         user.role = role
         user.save()
         return user
+
 
 class ProfileSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False)
@@ -65,17 +62,20 @@ class ProfileSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
+
 class PropertySerializer(serializers.ModelSerializer):
     owner_name = serializers.CharField(source='owner.username', read_only=True)
-    
+    reviews_count = serializers.IntegerField(source='reviews.count', read_only=True)
+
     class Meta:
         model = Property
         fields = "__all__"
-        read_only_fields = ("owner",)
+        read_only_fields = ("owner", "views_count")
+
 
 class FavoriteSerializer(serializers.ModelSerializer):
     property = PropertySerializer(read_only=True)
-    
+
     class Meta:
         model = Favorite
         fields = ['id', 'property', 'created_at']
@@ -113,7 +113,46 @@ class ViewingRequestSerializer(serializers.ModelSerializer):
         validated_data['user'] = user
         return super().create(validated_data)
 
-    def update(self, instance, validated_data):
-        if 'status' in validated_data:
-            instance.status = validated_data['status']
-        return super().update(instance, validated_data)
+
+class ReviewSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source='user.username', read_only=True)
+    property_title = serializers.CharField(source='property.title', read_only=True)
+
+    class Meta:
+        model = Review
+        fields = [
+            'id', 'property', 'property_title', 'user', 'user_name',
+            'viewing_request', 'rating', 'text', 'created_at'
+        ]
+        read_only_fields = ['user', 'created_at']
+
+    def validate_rating(self, value):
+        if value < 1 or value > 5:
+            raise serializers.ValidationError('Rating must be between 1 and 5')
+        return value
+
+    def validate(self, attrs):
+        request = self.context['request']
+        user = request.user
+        property_obj = attrs.get('property')
+        viewing_request = attrs.get('viewing_request')
+
+        if viewing_request:
+            if viewing_request.user != user or viewing_request.property != property_obj:
+                raise serializers.ValidationError('Viewing request does not match current user and property')
+            if viewing_request.status != ViewingRequest.COMPLETED:
+                raise serializers.ValidationError('Review can be linked only to a completed viewing request')
+        else:
+            has_completed_request = ViewingRequest.objects.filter(
+                user=user,
+                property=property_obj,
+                status=ViewingRequest.COMPLETED,
+            ).exists()
+            if not has_completed_request:
+                raise serializers.ValidationError('Review is available only after a completed viewing request')
+
+        return attrs
+
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)

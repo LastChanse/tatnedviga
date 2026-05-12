@@ -6,8 +6,8 @@ import { chatService } from '../services/chatService';
 import axios from "axios";
 
 const baseButton = "rounded-xl px-3 py-2 text-sm font-semibold transition-colors";
-const activeButton = `${baseButton} bg-gray-900 text-white shadow-sm`;
 const ghostButton = `${baseButton} text-gray-900 hover:bg-gray-100`;
+const navButton = `${baseButton} border border-gray-200 bg-white text-gray-900 shadow-sm hover:bg-gray-50`;
 const filterButton = "flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-colors";
 const activeFilterButton = `${filterButton} bg-gray-900 text-white shadow-sm`;
 const inactiveFilterButton = `${filterButton} text-gray-700 hover:bg-white/70`;
@@ -23,6 +23,7 @@ export default function HomePage() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [favorites, setFavorites] = useState(new Set());
   const [listings, setListings] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const requestIdRef = useRef(0);
 
   const role = localStorage.getItem("role");
@@ -37,19 +38,33 @@ export default function HomePage() {
 
     try {
       const res = await axios.get("http://localhost:8000/api/properties/", { params });
-      if (requestIdRef.current === requestId) {
-        setListings(res.data);
-      }
+      if (requestIdRef.current === requestId) setListings(res.data);
     } catch (err) {
-      if (requestIdRef.current === requestId) {
-        console.error(err);
-      }
+      if (requestIdRef.current === requestId) console.error(err);
+    }
+  };
+
+  const loadUnreadCount = async () => {
+    if (!isAuthed) {
+      setUnreadCount(0);
+      return;
+    }
+    try {
+      const conversations = await chatService.getConversations();
+      setUnreadCount(conversations.reduce((sum, item) => sum + (item.unread_count || 0), 0));
+    } catch (err) {
+      console.error(err);
+      setUnreadCount(0);
     }
   };
 
   useEffect(() => {
     loadListings(showOnlyAvailable);
   }, [showOnlyAvailable]);
+
+  useEffect(() => {
+    loadUnreadCount();
+  }, [isAuthed]);
 
   useEffect(() => {
     if (isAuthed && isClient) {
@@ -91,6 +106,7 @@ export default function HomePage() {
     if (!isClient) return;
     try {
       const conversation = await chatService.startConversation(item.id, `Здравствуйте! Интересует объект: ${item.title}`);
+      await loadUnreadCount();
       navigate(`/chats/${conversation.id}`);
     } catch (err) {
       console.error(err);
@@ -111,17 +127,11 @@ export default function HomePage() {
       .filter((x) => (max === null ? true : x.price <= max))
       .filter((x) => {
         if (!q) return true;
-        return (
-          x.title?.toLowerCase().includes(q) ||
-          x.address?.toLowerCase().includes(q) ||
-          x.district?.toLowerCase().includes(q) ||
-          x.description?.toLowerCase().includes(q)
-        );
+        return x.title?.toLowerCase().includes(q) || x.address?.toLowerCase().includes(q) || x.district?.toLowerCase().includes(q) || x.description?.toLowerCase().includes(q);
       });
   }, [listings, dealType, propertyType, priceMin, priceMax, query, showOnlyAvailable]);
 
-  const formatPrice = (n, deal) =>
-    new Intl.NumberFormat("ru-RU").format(n) + (deal === "rent" ? " ₽/мес" : " ₽");
+  const formatPrice = (n, deal) => new Intl.NumberFormat("ru-RU").format(n) + (deal === "rent" ? " ₽/мес" : " ₽");
 
   const statusMeta = (status) => {
     switch (status) {
@@ -145,6 +155,17 @@ export default function HomePage() {
     loadListings(true);
   };
 
+  const MessagesLink = () => (
+    <Link to="/chats" className={`${ghostButton} relative pr-8`}>
+      Сообщения
+      {unreadCount > 0 && (
+        <span className="absolute right-1 top-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-extrabold leading-none text-white">
+          {unreadCount > 99 ? '99+' : unreadCount}
+        </span>
+      )}
+    </Link>
+  );
+
   return (
     <div className="min-h-screen bg-white text-gray-900">
       <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/80 backdrop-blur">
@@ -155,15 +176,16 @@ export default function HomePage() {
           </Link>
 
           <nav className="flex flex-wrap items-center justify-end gap-2">
-            <a href="#catalog" className={activeButton}>Каталог</a>
-            {isAuthed && <Link to="/chats" className={ghostButton}>Сообщения</Link>}
-
             {isOwner && (
-              <>
-                <Link to="/create-property" className="rounded-xl bg-emerald-600 px-3 py-2 text-sm font-extrabold text-white shadow-sm hover:bg-emerald-700">+ Добавить объект</Link>
-                <Link to="/owner/properties" className={ghostButton}>Мои объявления</Link>
-              </>
+              <Link to="/create-property" className="rounded-xl bg-emerald-600 px-3 py-2 text-sm font-extrabold text-white shadow-sm hover:bg-emerald-700">
+                + Добавить объект
+              </Link>
             )}
+
+            <a href="#catalog" className={navButton}>Каталог</a>
+            {isAuthed && <MessagesLink />}
+
+            {isOwner && <Link to="/owner/properties" className={ghostButton}>Мои объявления</Link>}
 
             {!isOwner && (
               <>

@@ -4,6 +4,8 @@ import { Button, Form, Input, List, Rate, Tag, message } from 'antd';
 import { reviewService } from '../services/reviewService';
 import { requestService } from '../services/requestService';
 
+const starStyle = { color: '#f59e0b', fontSize: 24 };
+
 export default function Reviews({ propertyId }) {
   const [reviews, setReviews] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -23,7 +25,7 @@ export default function Reviews({ propertyId }) {
     [reviews, completedRequest]
   );
 
-  const canReview = isAuthed && role !== 'owner' && Boolean(completedRequest) && !alreadyReviewed;
+  const canReview = isAuthed && role === 'client' && Boolean(completedRequest) && !alreadyReviewed;
 
   const loadData = async () => {
     try {
@@ -66,9 +68,9 @@ export default function Reviews({ propertyId }) {
 
   const hint = () => {
     if (!isAuthed) return 'Войдите в аккаунт, чтобы оставить отзыв.';
-    if (role === 'owner') return 'Собственник не может оставлять отзыв на свой объект.';
+    if (role === 'owner') return 'Собственник не оставляет отзывы на объекты.';
     if (alreadyReviewed) return 'Вы уже оставили отзыв по этому завершённому просмотру.';
-    if (!completedRequest) return 'Сначала нужно записаться на просмотр, а собственник должен завершить заявку.';
+    if (!completedRequest) return 'Отзыв доступен после завершённой собственником заявки на просмотр.';
     return '';
   };
 
@@ -86,8 +88,8 @@ export default function Reviews({ propertyId }) {
         renderItem={(review) => (
           <List.Item>
             <List.Item.Meta
-              title={<div className="flex items-center gap-2"><Rate disabled value={review.rating} /> <span>{review.user_name}</span></div>}
-              description={review.text || 'Без комментария'}
+              title={<div className="flex items-center gap-2"><Rate disabled value={review.rating} style={starStyle} /> <span className="font-semibold text-gray-900">{review.user_name}</span></div>}
+              description={<span className="text-gray-700">{review.text || 'Без комментария'}</span>}
             />
           </List.Item>
         )}
@@ -109,7 +111,7 @@ export default function Reviews({ propertyId }) {
         {canReview && showForm && (
           <Form form={form} layout="vertical" onFinish={handleSubmit}>
             <Form.Item name="rating" label="Оценка" rules={[{ required: true, message: 'Поставьте оценку' }]}>
-              <Rate />
+              <Rate style={starStyle} />
             </Form.Item>
             <Form.Item name="text" label="Комментарий">
               <Input.TextArea rows={3} placeholder="Расскажите о просмотре" />

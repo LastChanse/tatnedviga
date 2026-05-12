@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { HeartOutlined, HeartFilled } from '@ant-design/icons';
+import { HeartOutlined, HeartFilled, MessageOutlined } from '@ant-design/icons';
 import { favoriteService } from '../services/favoriteService';
+import { chatService } from '../services/chatService';
 import axios from 'axios';
 import ViewingRequests from "../components/ViewingRequests.jsx";
 import Reviews from "../components/Reviews.jsx";
@@ -11,6 +12,7 @@ export default function PropertyDetail() {
   const navigate = useNavigate();
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [chatLoading, setChatLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const [isFavorite, setIsFavorite] = useState(false);
@@ -41,6 +43,24 @@ export default function PropertyDetail() {
       setIsFavorite(result.status === 'added');
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const startChat = async () => {
+    if (!isAuthed) {
+      navigate('/login');
+      return;
+    }
+    if (!isClient) return;
+    try {
+      setChatLoading(true);
+      const conversation = await chatService.startConversation(property.id, `Здравствуйте! Интересует объект: ${property.title}`);
+      navigate(`/chats/${conversation.id}`);
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.non_field_errors?.[0] || err.response?.data?.error || 'Не удалось открыть чат');
+    } finally {
+      setChatLoading(false);
     }
   };
 
@@ -96,7 +116,10 @@ export default function PropertyDetail() {
             <button onClick={() => navigate(-1)} className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100">← Назад</button>
             <Link to="/" className="font-extrabold tracking-tight text-gray-900">Недвижимость</Link>
           </div>
-          {isOwner && <Link to="/owner/properties" className="rounded-xl bg-gray-900 px-3 py-2 text-sm font-extrabold text-white">Управление</Link>}
+          <div className="flex items-center gap-2">
+            {isAuthed && <Link to="/chats" className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100">Сообщения</Link>}
+            {isOwner && <Link to="/owner/properties" className="rounded-xl bg-gray-900 px-3 py-2 text-sm font-extrabold text-white">Управление</Link>}
+          </div>
         </div>
       </header>
 
@@ -106,13 +129,24 @@ export default function PropertyDetail() {
           <img src={property.image || 'https://via.placeholder.com/800x400?text=Нет+фото'} alt={property.title} className="w-full h-[400px] object-cover rounded-2xl" />
         </div>
 
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="text-3xl font-extrabold text-gray-900">{formatPrice(property.price)}{property.deal === 'rent' && ' /мес'}</div>
-          {isClient && (
-            <button onClick={toggleFavorite} className="p-3 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors" title="Избранное">
-              {isFavorite ? <HeartFilled className="text-red-500 text-2xl" /> : <HeartOutlined className="text-gray-700 text-2xl" />}
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {isClient && (
+              <button onClick={toggleFavorite} className="p-3 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors" title="Избранное">
+                {isFavorite ? <HeartFilled className="text-red-500 text-2xl" /> : <HeartOutlined className="text-gray-700 text-2xl" />}
+              </button>
+            )}
+            {isClient && (
+              <button
+                onClick={startChat}
+                disabled={chatLoading}
+                className="rounded-xl bg-gray-900 px-4 py-3 text-sm font-extrabold text-white hover:bg-gray-800 disabled:opacity-60"
+              >
+                <MessageOutlined /> {chatLoading ? 'Открываю...' : 'Связаться'}
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2 mb-6">
@@ -130,7 +164,7 @@ export default function PropertyDetail() {
 
         {property.description && <div className="mb-6"><h2 className="text-xl font-extrabold text-gray-900 mb-3">Описание</h2><p className="text-gray-800 leading-relaxed">{property.description}</p></div>}
 
-        {!canClientInteract && isClient && <div className="mb-4 rounded-xl bg-amber-50 p-4 text-sm font-semibold text-amber-800">Объект сейчас недоступен для новой записи на просмотр.</div>}
+        {!canClientInteract && isClient && <div className="mb-4 rounded-xl bg-amber-50 p-4 text-sm font-semibold text-amber-800">Объект сейчас недоступен для новой записи на просмотр, но вы можете написать собственнику.</div>}
         <ViewingRequests propertyId={property.id} isOwner={isOwner} canCreateRequest={canClientInteract} />
         <Reviews propertyId={property.id} />
       </main>

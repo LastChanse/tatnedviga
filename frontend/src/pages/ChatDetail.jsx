@@ -29,7 +29,7 @@ const formatMessageDate = (value) => {
 };
 
 const myBubbleClass = 'max-w-[75%] rounded-2xl rounded-br-md bg-gray-900 px-4 py-2 text-white shadow-sm';
-const companionBubbleClass = 'max-w-[75%] rounded-2xl rounded-bl-md border border-blue-100 bg-blue-50 px-4 py-2 text-gray-900 shadow-sm';
+const companionBubbleClass = 'max-w-[75%] rounded-2xl rounded-bl-md border border-indigo-200 bg-indigo-100 px-4 py-2 text-indigo-950 shadow-sm';
 
 export default function ChatDetail() {
   const { id } = useParams();
@@ -148,7 +148,7 @@ export default function ChatDetail() {
                     <div className={msg.is_mine ? 'flex justify-end' : 'flex justify-start'}>
                       <div className={msg.is_mine ? myBubbleClass : companionBubbleClass}>
                         <div className="whitespace-pre-wrap text-sm leading-relaxed">{msg.text}</div>
-                        <div className={msg.is_mine ? 'mt-1 text-right text-[11px] font-medium text-gray-300' : 'mt-1 text-right text-[11px] font-medium text-blue-500'}>
+                        <div className={msg.is_mine ? 'mt-1 text-right text-[11px] font-medium text-gray-300' : 'mt-1 text-right text-[11px] font-medium text-indigo-600'}>
                           {formatMessageTime(msg.created_at)}
                         </div>
                       </div>

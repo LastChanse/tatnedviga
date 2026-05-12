@@ -14,6 +14,13 @@ export const chatService = {
     return response.data;
   },
 
+  getConversation: async (conversationId) => {
+    const response = await axios.get(`${API_URL}/conversations/${conversationId}/`, {
+      headers: authHeaders(),
+    });
+    return response.data;
+  },
+
   startConversation: async (propertyId, text = '') => {
     const response = await axios.post(
       `${API_URL}/conversations/`,

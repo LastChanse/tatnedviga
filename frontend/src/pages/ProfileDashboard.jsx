@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Button, Card, Col, Form, Input, List, Row, Space, Statistic, Tag, message } from "antd";
-import { ArrowLeftOutlined, FileTextOutlined, HomeOutlined, LogoutOutlined, SaveOutlined, UserOutlined } from "@ant-design/icons";
+import { Alert, Button, Card, Col, Form, Input, List, Row, Space, Statistic, Tag, message } from "antd";
+import { ArrowLeftOutlined, CheckCircleOutlined, FileTextOutlined, HomeOutlined, LogoutOutlined, SaveOutlined, UserOutlined } from "@ant-design/icons";
 import api from "../api";
 import { favoriteService } from "../services/favoriteService";
 import { requestService } from "../services/requestService";
@@ -13,6 +13,13 @@ const requestStatus = {
   approved: "Подтверждена",
   rejected: "Отклонена",
   completed: "Завершена",
+};
+
+const requestStatusColor = {
+  pending: "orange",
+  approved: "green",
+  rejected: "red",
+  completed: "blue",
 };
 
 export default function ProfileDashboard() {
@@ -28,6 +35,7 @@ export default function ProfileDashboard() {
   const role = profile?.role || localStorage.getItem("role") || "client";
   const isOwner = role === "owner";
   const activeRequests = requests.filter((item) => ["pending", "approved"].includes(item.status));
+  const completedRequests = requests.filter((item) => item.status === "completed");
   const viewsCount = properties.reduce((sum, item) => sum + (item.views_count || 0), 0);
 
   useEffect(() => {
@@ -79,6 +87,35 @@ export default function ProfileDashboard() {
     navigate("/login");
   };
 
+  const renderRequestItem = (item, showCompletedHint = false) => (
+    <List.Item
+      actions={[
+        <Link key="open" to={`/property/${item.property}`} className="font-semibold text-gray-900">
+          Перейти
+        </Link>,
+      ]}
+    >
+      <List.Item.Meta
+        title={
+          <div className="flex flex-wrap items-center gap-2">
+            <Link to={`/property/${item.property}`} className="font-extrabold text-gray-900 hover:underline">
+              {item.property_title || `Объект #${item.property}`}
+            </Link>
+            <Tag color={requestStatusColor[item.status] || "default"}>{requestStatus[item.status] || item.status}</Tag>
+            {showCompletedHint && <Tag color="cyan" icon={<CheckCircleOutlined />}>можно оставить отзыв</Tag>}
+          </div>
+        }
+        description={
+          <div className="space-y-1 text-sm text-gray-600">
+            <div>{item.property_address || "Адрес не указан"}</div>
+            <div>Просмотр: {item.requested_date} в {item.requested_time}</div>
+            {item.message && <div>Комментарий: {item.message}</div>}
+          </div>
+        }
+      />
+    </List.Item>
+  );
+
   if (loading) {
     return <div className="min-h-screen grid place-items-center text-gray-600">Загрузка профиля...</div>;
   }
@@ -94,6 +131,9 @@ export default function ProfileDashboard() {
           <Space wrap>
             <Link to="/" className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100">
               <ArrowLeftOutlined /> На главную
+            </Link>
+            <Link to="/chats" className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100">
+              Сообщения
             </Link>
             {isOwner && (
               <Link to="/owner/properties" className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100">
@@ -129,6 +169,17 @@ export default function ProfileDashboard() {
           </div>
         </section>
 
+        {!isOwner && completedRequests.length > 0 && (
+          <div className="mb-6">
+            <Alert
+              type="success"
+              showIcon
+              message="Есть завершённые просмотры"
+              description="По завершённым заявкам можно перейти к объекту и оставить отзыв в блоке отзывов."
+            />
+          </div>
+        )}
+
         <Row gutter={[16, 16]}>
           <Col xs={24} lg={10}>
             <Card title="Личные данные" className="rounded-2xl border-gray-200">
@@ -155,18 +206,21 @@ export default function ProfileDashboard() {
               {isOwner && <OwnerIncomingRequests />}
 
               {!isOwner && (
-                <Card title="Статус текущих взаимодействий" className="rounded-2xl border-gray-200">
+                <Card title="Текущие заявки" className="rounded-2xl border-gray-200">
                   <List
                     dataSource={activeRequests}
-                    locale={{ emptyText: "Нет активных взаимодействий" }}
-                    renderItem={(item) => (
-                      <List.Item>
-                        <List.Item.Meta
-                          title={`Заявка #${item.id} · ${requestStatus[item.status] || item.status}`}
-                          description={`${item.requested_date} в ${item.requested_time}`}
-                        />
-                      </List.Item>
-                    )}
+                    locale={{ emptyText: "Нет текущих заявок" }}
+                    renderItem={(item) => renderRequestItem(item)}
+                  />
+                </Card>
+              )}
+
+              {!isOwner && completedRequests.length > 0 && (
+                <Card title="Завершённые просмотры" className="rounded-2xl border-gray-200">
+                  <List
+                    dataSource={completedRequests}
+                    locale={{ emptyText: "Завершённых просмотров нет" }}
+                    renderItem={(item) => renderRequestItem(item, true)}
                   />
                 </Card>
               )}
@@ -194,14 +248,7 @@ export default function ProfileDashboard() {
                   <List
                     dataSource={requests}
                     locale={{ emptyText: "Заявок пока нет" }}
-                    renderItem={(item) => (
-                      <List.Item>
-                        <List.Item.Meta
-                          title={`Заявка #${item.id}`}
-                          description={`${item.requested_date} в ${item.requested_time} · ${requestStatus[item.status] || item.status}`}
-                        />
-                      </List.Item>
-                    )}
+                    renderItem={(item) => renderRequestItem(item, item.status === "completed")}
                   />
                 </Card>
               )}

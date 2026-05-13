@@ -4,17 +4,18 @@ import { EyeOutlined, EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined
 import dayjs from 'dayjs';
 import { requestService } from "../services/requestService.js";
 
-const ViewingRequests = ({ propertyId, isOwner }) => {
+const ViewingRequests = ({ propertyId, isOwner, canCreateRequest = true }) => {
   const [requests, setRequests] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [editingId, setEditingId] = useState(null);
+  const isAuthed = Boolean(localStorage.getItem('access'));
+  const isClient = localStorage.getItem('role') === 'client';
 
   const fetchTotalCount = async () => {
-    if (!propertyId) return;
-
+    if (!propertyId || !isAuthed) return;
     try {
       const data = await requestService.getRequestsCountByProperty(propertyId);
       setTotalCount(data.count);
@@ -24,19 +25,13 @@ const ViewingRequests = ({ propertyId, isOwner }) => {
   };
 
   const fetchRequests = async () => {
-    if (!propertyId) return;
-
+    if (!propertyId || !isAuthed) return;
     try {
       setLoading(true);
       const data = await requestService.getRequestsByProperty(propertyId);
       setRequests(data);
     } catch (error) {
       console.error('Ошибка загрузки заявок:', error);
-      message.error(
-        error.response?.data?.message ||
-        error.message ||
-        'Ошибка при загрузке заявок'
-      );
       setRequests([]);
     } finally {
       setLoading(false);
@@ -44,85 +39,55 @@ const ViewingRequests = ({ propertyId, isOwner }) => {
   };
 
   const loadAllData = async () => {
-    await Promise.all([
-      fetchRequests(),
-      fetchTotalCount()
-    ]);
+    await Promise.all([fetchRequests(), fetchTotalCount()]);
   };
 
   useEffect(() => {
-    if (propertyId) {
-      loadAllData();
-    }
+    loadAllData();
   }, [propertyId, isOwner]);
 
   const handleSubmit = async (values) => {
-    const { date, time, message: comment } = values;
-
-    const formattedDate = date.format('YYYY-MM-DD');
-    const formattedTime = time.format('HH:mm');
+    const formattedDate = values.date.format('YYYY-MM-DD');
+    const formattedTime = values.time.format('HH:mm');
+    const comment = values.message || '';
 
     try {
       if (editingId) {
-        await requestService.updateRequest(
-          editingId,
-          formattedDate,
-          formattedTime,
-          comment || ''
-        );
-        message.success('Заявка успешно обновлена');
+        await requestService.updateRequest(editingId, formattedDate, formattedTime, comment);
+        message.success('Заявка обновлена');
       } else {
-        await requestService.createViewingRequest(
-          propertyId,
-          formattedDate,
-          formattedTime,
-          comment || ''
-        );
-        message.success('Заявка успешно создана');
+        await requestService.createViewingRequest(propertyId, formattedDate, formattedTime, comment);
+        message.success('Заявка создана');
       }
-
       setModalVisible(false);
       form.resetFields();
       setEditingId(null);
       await loadAllData();
-
     } catch (error) {
-      console.error('Ошибка при сохранении заявки:', error);
-      message.error(
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        'Ошибка при сохранении заявки'
-      );
+      console.error(error);
+      message.error(error.response?.data?.error || 'Ошибка при сохранении заявки');
     }
   };
 
   const handleCancelRequest = async (id) => {
     try {
       await requestService.deleteRequest(id);
-      message.success('Заявка отменена');
+      message.success(isOwner ? 'Заявка удалена' : 'Заявка отменена');
       await loadAllData();
     } catch (error) {
-      console.error('Ошибка при отмене заявки:', error);
-      message.error(
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        'Ошибка при отмене заявки'
-      );
+      console.error(error);
+      message.error(error.response?.data?.error || 'Ошибка при удалении заявки');
     }
   };
 
   const handleApprove = async (id) => {
     try {
       await requestService.approveRequest(id);
-      message.success('Заявка подтверждена');
+      message.success('Заявка подтверждена, объект забронирован');
       await loadAllData();
     } catch (error) {
-      console.error('Ошибка при подтверждении заявки:', error);
-      message.error(
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        'Ошибка при подтверждении заявки'
-      );
+      console.error(error);
+      message.error(error.response?.data?.error || 'Ошибка при подтверждении заявки');
     }
   };
 
@@ -132,12 +97,19 @@ const ViewingRequests = ({ propertyId, isOwner }) => {
       message.success('Заявка отклонена');
       await loadAllData();
     } catch (error) {
-      console.error('Ошибка при отклонении заявки:', error);
-      message.error(
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        'Ошибка при отклонении заявки'
-      );
+      console.error(error);
+      message.error(error.response?.data?.error || 'Ошибка при отклонении заявки');
+    }
+  };
+
+  const handleComplete = async (id) => {
+    try {
+      await requestService.completeRequest(id);
+      message.success('Сделка завершена, объект снят с публикации');
+      await loadAllData();
+    } catch (error) {
+      console.error(error);
+      message.error(error.response?.data?.error || 'Ошибка при завершении сделки');
     }
   };
 
@@ -145,7 +117,7 @@ const ViewingRequests = ({ propertyId, isOwner }) => {
     setEditingId(request.id);
     form.setFieldsValue({
       date: dayjs(request.requested_date),
-      time: dayjs(request.requested_time, 'HH:mm'),
+      time: dayjs(request.requested_time, 'HH:mm:ss'),
       message: request.message || ''
     });
     setModalVisible(true);
@@ -165,162 +137,83 @@ const ViewingRequests = ({ propertyId, isOwner }) => {
       completed: { color: 'blue', text: 'Завершена' },
       default: { color: 'gray', text: status }
     };
-
     const currentStatus = statusMap[status] || statusMap.default;
     return <Tag color={currentStatus.color}>{currentStatus.text}</Tag>;
   };
 
+  const canShowCreateButton = isClient && canCreateRequest;
+
   return (
-    <div className="mt-6 ml-4 mr-4">
-      <div className="flex justify-between items-center mb-4">
+    <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-5">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-xl font-extrabold text-gray-900 mb-2">Заявки на просмотр</h3>
-          <span className="ml-2 text-gray-500 text-sm">
-              Всего заявок на объект {totalCount}
-            </span>
+          <h3 className="text-xl font-extrabold text-gray-900">Заявки на просмотр</h3>
+          <span className="text-sm text-gray-500">{isOwner ? `Всего входящих заявок: ${totalCount}` : `Ваши заявки по объекту: ${requests.length}`}</span>
         </div>
-        {!isOwner && (
-          <Button
-            type="primary"
-            icon={<EyeOutlined />}
-            onClick={() => setModalVisible(true)}
-          >
+        {canShowCreateButton && (
+          <Button type="primary" icon={<EyeOutlined />} onClick={() => setModalVisible(true)}>
             Записаться на просмотр
           </Button>
         )}
       </div>
 
-      <List
-        loading={loading}
-        dataSource={requests}
-        renderItem={(request) => (
-          <List.Item
-            actions={
-              !isOwner && request.status === 'pending' ? [
-                <Button
-                  key="edit"
-                  type="text"
-                  icon={<EditOutlined />}
-                  onClick={() => handleEditRequest(request)}
-                  title="Редактировать заявку"
-                />,
-                <Popconfirm
-                  key="delete"
-                  title="Вы уверены, что хотите отменить заявку?"
-                  onConfirm={() => handleCancelRequest(request.id)}
-                  okText="Да"
-                  cancelText="Нет"
-                >
-                  <Button type="text" danger icon={<DeleteOutlined />} title="Отменить заявку" />
-                </Popconfirm>
-              ] : []
-            }
-          >
-            <List.Item.Meta
-              title={
-                <Space direction="vertical" size="small">
-                  <Space>
-                    {dayjs(request.requested_date).format('DD.MM.YYYY')} в {request.requested_time}
-                    {getStatusTag(request.status)}
-                  </Space>
-                  {isOwner && request.user_name && (
-                    <Space size="small" style={{ fontSize: '12px', color: '#666' }}>
-                      <UserOutlined /> <span>Заявитель: {request.user_name}</span>
+      {!isAuthed && <div className="rounded-xl bg-gray-50 p-4 text-sm text-gray-600">Войдите, чтобы записаться на просмотр или посмотреть свои заявки.</div>}
+      {isClient && !canCreateRequest && <div className="mb-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-800">Новая запись недоступна: объект неактивен или уже забронирован/продан/сдан.</div>}
+
+      {isAuthed && (
+        <List
+          loading={loading}
+          dataSource={requests}
+          renderItem={(request) => {
+            const clientCanEdit = isClient && request.status === 'pending';
+            const ownerCanAct = isOwner && ['pending', 'approved'].includes(request.status);
+            return (
+              <List.Item
+                actions={clientCanEdit ? [
+                  <Button key="edit" type="text" icon={<EditOutlined />} onClick={() => handleEditRequest(request)} title="Редактировать заявку" />,
+                  <Popconfirm key="delete" title="Отменить заявку?" onConfirm={() => handleCancelRequest(request.id)} okText="Да" cancelText="Нет">
+                    <Button type="text" danger icon={<DeleteOutlined />} title="Отменить заявку" />
+                  </Popconfirm>
+                ] : []}
+              >
+                <List.Item.Meta
+                  title={
+                    <Space direction="vertical" size="small">
+                      <Space wrap>{dayjs(request.requested_date).format('DD.MM.YYYY')} в {request.requested_time}{getStatusTag(request.status)}</Space>
+                      {isOwner && request.user_name && <Space size="small" style={{ fontSize: 12, color: '#666' }}><UserOutlined /> <span>Клиент: {request.user_name}</span></Space>}
                     </Space>
-                  )}
-                </Space>
-              }
-              description={
-                request.message && (
-                  <div className="mt-2 text-gray-600">
-                    <strong>Комментарий:</strong> {request.message}
-                  </div>
-                )
-              }
-            />
-            {isOwner && request.status === 'pending' && (
-              <Space>
-                <Button
-                  type="primary"
-                  size="small"
-                  icon={<CheckOutlined />}
-                  onClick={() => handleApprove(request.id)}
-                >
-                  Подтвердить
-                </Button>
-                <Button
-                  danger
-                  size="small"
-                  icon={<CloseOutlined />}
-                  onClick={() => handleReject(request.id)}
-                >
-                  Отклонить
-                </Button>
-              </Space>
-            )}
-          </List.Item>
-        )}
-        locale={{ emptyText: 'Нет видимых заявок на просмотр' }}
-      />
-
-      <Modal
-        title={editingId ? 'Редактировать заявку' : 'Новая заявка на просмотр'}
-        open={modalVisible}
-        onCancel={handleCancelModal}
-        footer={null}
-        destroyOnClose
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          initialValues={{
-            message: ''
+                  }
+                  description={request.message && <div className="mt-2 text-gray-600"><strong>Комментарий:</strong> {request.message}</div>}
+                />
+                {ownerCanAct && (
+                  <Space wrap>
+                    {request.status === 'pending' && <Button type="primary" size="small" icon={<CheckOutlined />} onClick={() => handleApprove(request.id)}>Подтвердить</Button>}
+                    <Button size="small" onClick={() => handleEditRequest(request)}>Перенести</Button>
+                    {request.status === 'approved' && <Button size="small" onClick={() => handleComplete(request.id)}>Завершить сделку</Button>}
+                    {request.status === 'pending' && <Button danger size="small" icon={<CloseOutlined />} onClick={() => handleReject(request.id)}>Отклонить</Button>}
+                  </Space>
+                )}
+              </List.Item>
+            );
           }}
-        >
-          <Form.Item
-            name="date"
-            label="Дата просмотра"
-            rules={[{ required: true, message: 'Выберите дату' }]}
-          >
-            <DatePicker
-              style={{ width: '100%' }}
-              disabledDate={(current) => current && current < dayjs().startOf('day')}
-              format="YYYY-MM-DD"
-            />
-          </Form.Item>
+          locale={{ emptyText: isOwner ? 'Входящих заявок нет' : 'У вас нет заявок по этому объекту' }}
+        />
+      )}
 
-          <Form.Item
-            name="time"
-            label="Время просмотра"
-            rules={[{ required: true, message: 'Выберите время' }]}
-          >
-            <TimePicker
-              style={{ width: '100%' }}
-              format="HH:mm"
-              minuteStep={15}
-              showNow={false}
-            />
+      <Modal title={editingId ? 'Изменить дату и время просмотра' : 'Новая заявка на просмотр'} open={modalVisible} onCancel={handleCancelModal} footer={null} destroyOnClose>
+        <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ message: '' }}>
+          <Form.Item name="date" label="Дата просмотра" rules={[{ required: true, message: 'Выберите дату' }]}>
+            <DatePicker style={{ width: '100%' }} disabledDate={(current) => current && current < dayjs().startOf('day')} format="YYYY-MM-DD" />
           </Form.Item>
-
-          <Form.Item
-            name="message"
-            label="Комментарий (необязательно)"
-          >
-            <textarea
-              className="w-full border rounded p-2"
-              rows={3}
-              placeholder="Ваш комментарий..."
-            />
+          <Form.Item name="time" label="Время просмотра" rules={[{ required: true, message: 'Выберите время' }]}>
+            <TimePicker style={{ width: '100%' }} format="HH:mm" minuteStep={15} showNow={false} />
           </Form.Item>
-
+          <Form.Item name="message" label="Комментарий">
+            <textarea className="w-full rounded-xl border border-gray-300 bg-white p-2 text-gray-900 placeholder:text-gray-400" rows={3} placeholder="Комментарий..." />
+          </Form.Item>
           <div className="flex justify-end gap-2">
-            <Button onClick={handleCancelModal}>
-              Отмена
-            </Button>
-            <Button type="primary" htmlType="submit">
-              {editingId ? 'Обновить' : 'Отправить'}
-            </Button>
+            <Button onClick={handleCancelModal}>Отмена</Button>
+            <Button type="primary" htmlType="submit">{editingId ? 'Сохранить' : 'Отправить'}</Button>
           </div>
         </Form>
       </Modal>

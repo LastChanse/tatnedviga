@@ -99,12 +99,16 @@ class ViewingRequestSerializer(serializers.ModelSerializer):
         }
     )
     user_name = serializers.CharField(source='user.username', read_only=True)
+    property_title = serializers.CharField(source='property.title', read_only=True)
+    property_address = serializers.CharField(source='property.address', read_only=True)
+    property_status = serializers.CharField(source='property.status', read_only=True)
 
     class Meta:
         model = ViewingRequest
         fields = [
-            'id', 'property', 'requested_date', 'requested_time',
-            'message', 'status', 'created_at', 'updated_at', 'user', 'user_name'
+            'id', 'property', 'property_title', 'property_address', 'property_status',
+            'requested_date', 'requested_time', 'message', 'status',
+            'created_at', 'updated_at', 'user', 'user_name'
         ]
         read_only_fields = ['status', 'created_at', 'updated_at', 'user']
 

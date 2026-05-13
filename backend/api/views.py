@@ -60,7 +60,7 @@ class PropertyViewSet(viewsets.ModelViewSet):
         if self.action == 'my':
             return queryset.filter(owner=self.request.user)
 
-        if self.action in ['list', 'retrieve']:
+        if self.action == 'list' and self.request.query_params.get('include_inactive') != 'true':
             return queryset.filter(is_active=True)
 
         return queryset
